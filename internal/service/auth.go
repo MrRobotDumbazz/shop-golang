@@ -89,5 +89,5 @@ func (s *AuthService) GenerateJWT(login, password string) (string, error) {
 		}
 		return "", err
 	}
-	token := jwt.NewWithClaims()
+	token := jwt.NewWithClaims(jwt.GetSigningMethod())
 }
