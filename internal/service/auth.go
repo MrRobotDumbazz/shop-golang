@@ -6,8 +6,10 @@ import (
 	"regexp"
 	"shop/internal/repository"
 	"shop/models"
+	"time"
 
 	"github.com/dgrijalva/jwt-go"
+	uuid "github.com/satori/go.uuid"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -26,6 +28,11 @@ type Auth interface {
 
 type AuthService struct {
 	repository repository.Auth
+}
+
+type tokenClaims struct {
+	jwt.StandardClaims
+	SellerId int `json:"seller_id"`
 }
 
 func newAuthService(repository repository.Auth) *AuthService {
@@ -89,5 +96,13 @@ func (s *AuthService) GenerateJWT(login, password string) (string, error) {
 		}
 		return "", err
 	}
-	token := jwt.NewWithClaims(jwt.GetSigningMethod())
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, &tokenClaims{
+		StandardClaims: jwt.StandardClaims{
+			ExpiresAt: time.Now().Add(12 * time.Hour).Unix(),
+			IssuedAt:  time.Now().Unix(),
+		},
+		SellerId: seller,
+	})
+	tokensigned = uuid.NewV4()
+	return token.SignedString([]byte())
 }
