@@ -9,7 +9,6 @@ import (
 type Auth interface {
 	CreateSeller(*models.Seller) error
 	GetUser(email, password string) (int, error)
-	CreateJWT() error
 }
 
 type AuthRepository struct {

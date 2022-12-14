@@ -22,8 +22,8 @@ var (
 type Auth interface {
 	CreateSeller(*models.Seller) error
 	GenerateJWT(login, password string) (string, error)
-	ParseJWT(token string) (int, error)
-	DeleteJWT(token string) error
+	// ParseJWT(token string) (int, error)
+	// DeleteJWT(token string) error
 }
 
 type AuthService struct {
@@ -60,12 +60,8 @@ func encryptString(s string) (string, error) {
 	return string(b), nil
 }
 
-func ComparePassword(password string) bool {
-	return bcrypt.CompareHashAndPassword([]byte(s.Password), []byte(password)) != nil
-}
-
 func validSeller(s *models.Seller) error {
-	validEmail, err := regexp.MatchString(`[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$`, u.Email)
+	validEmail, err := regexp.MatchString(`[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$`, s.Email)
 	if err != nil {
 		return err
 	}
@@ -103,6 +99,6 @@ func (s *AuthService) GenerateJWT(login, password string) (string, error) {
 		},
 		SellerId: seller,
 	})
-	tokensigned = uuid.NewV4()
-	return token.SignedString([]byte())
+	tokensigned := uuid.NewV4()
+	return token.SignedString(tokensigned.Bytes())
 }

@@ -18,8 +18,8 @@ func NewHandler(services *service.Service) *Handler {
 
 func (h *Handler) Handlers() *mux.Router {
 	r := mux.NewRouter()
-	r.HandleFunc("/", HomePage).Methods("GET")
-	r.HandleFunc("/sign-up", SignUp).Methods("GET", "POST")
-	r.HandleFunc("/signin", SignIn).Methods("GET", "POST")
+	r.HandleFunc("/", h.HomePage).Methods("GET")
+	r.HandleFunc("/sign-up", h.SignUp).Methods("GET", "POST")
+	r.HandleFunc("/signin", h.SignIn).Methods("GET", "POST")
 	return r
 }

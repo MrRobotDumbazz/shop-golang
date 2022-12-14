@@ -4,7 +4,6 @@ import "database/sql"
 
 type Repository struct {
 	Client
-	Seller
 	Auth
 	Product
 }
@@ -12,7 +11,6 @@ type Repository struct {
 func NewRepository(db *sql.DB) *Repository {
 	return &Repository{
 		Client:  newClientRepository(db),
-		Seller:  newSellerRepostiroy(db),
 		Auth:    newAuthRepository(db),
 		Product: newProductRepository(db),
 	}
