@@ -1,6 +1,10 @@
 package delivery
 
-import "github.com/gorilla/mux"
+import (
+	"shop/internal/service"
+
+	"github.com/gorilla/mux"
+)
 
 type Handler struct {
 	services *service.Service
