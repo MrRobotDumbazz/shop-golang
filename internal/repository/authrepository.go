@@ -9,6 +9,7 @@ import (
 type Auth interface {
 	CreateSeller(*models.Seller) error
 	GetUser(email, password string) (int, error)
+	CreateJWT(jwt *models.Token) error
 }
 
 type AuthRepository struct {
@@ -39,4 +40,11 @@ func (r *AuthRepository) GetUser(email, password string) (int, error) {
 		return 0, err
 	}
 	return s.ID, nil
+}
+
+func (r *AuthRepository) CreateJWT(jwt *models.Token) error {
+	if _, err := r.db.Exec("INSERT INTO shopdb.tokens (seller_id, signingkey, token) VALUES(?, ?, ?)", jwt.SellerID, jwt.Signignkey, jwt.Token); err != nil {
+		return err
+	}
+	return nil
 }

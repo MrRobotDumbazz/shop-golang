@@ -100,5 +100,15 @@ func (s *AuthService) GenerateJWT(login, password string) (string, error) {
 		SellerId: seller,
 	})
 	tokensigned := uuid.NewV4()
-	return token.SignedString(tokensigned.Bytes())
+	tokenstring, err := token.SignedString(tokensigned.Bytes())
+	if err != nil {
+		return "", err
+	}
+	t := &models.Token{
+		SellerID:   seller,
+		Signignkey: tokensigned.String(),
+		Token:      tokenstring,
+	}
+	err = s.repository.CreateJWT(t)
+	return tokenstring, nil
 }

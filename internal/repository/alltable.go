@@ -25,6 +25,14 @@ const productTable = `CREATE TABLE IF NOT EXISTS "product" (
 	"price" FLOAT64 NOT NULL
 );`
 
+const JWTTable = `CREATE TABLE IF NOT EXISTS "tokens"  (
+"id" INTEGER PRIMARY KEY AUTOINCREMENT UNIQUE NOT NULL,
+"seller_id" INTEGER NOT NULL,
+"signingkey" TEXT NOT NULL,
+"date" DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+`
+
 var tables = []string{sellerTable, clientTable, productTable}
 
 func Init() (*sql.DB, error) {
