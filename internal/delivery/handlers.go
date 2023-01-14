@@ -3,7 +3,7 @@ package delivery
 import (
 	"shop/internal/service"
 
-	"github.com/gorilla/mux"
+	"github.com/go-chi/chi"
 )
 
 type Handler struct {
@@ -16,10 +16,10 @@ func NewHandler(services *service.Service) *Handler {
 	}
 }
 
-func (h *Handler) Handlers() *mux.Router {
-	r := mux.NewRouter()
-	r.HandleFunc("/", h.HomePage).Methods("GET")
-	r.HandleFunc("/sign-up", h.SignUp).Methods("GET", "POST")
-	r.HandleFunc("/signin", h.SignIn).Methods("GET", "POST")
+func (h *Handler) Handlers() *chi.Router {
+	r := chi.NewRouter()
+	r.Get("/", h.HomePage)
+	r.Get("/sign-up", h.SignUp)
+	r.Post("/sign-up", h.SignUp)
 	return r
 }

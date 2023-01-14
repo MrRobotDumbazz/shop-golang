@@ -13,6 +13,11 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+const (
+	accessSecret  = "access_secret_string"
+	refreshSecret = "refresh_secret_string"
+)
+
 var (
 	ErrSellerNotFound  = errors.New("Incorrect email or password")
 	ErrInvalidEmail    = errors.New("invalid email")
@@ -26,18 +31,32 @@ type Auth interface {
 	// DeleteJWT(token string) error
 }
 
+// type MockCache struct{}
+
+// func (m *MockCache) SetToken(SID int, token string) {
+// 	log.Println("mock called")
+// }
+
+type Cache interface {
+	SetToken(SID int, token string)
+	GetToken(ID int, token string)
+}
+
 type AuthService struct {
 	repository repository.Auth
+	redis      Cache
 }
 
 type tokenClaims struct {
 	jwt.StandardClaims
-	SellerId int `json:"seller_id"`
+	SellerId int    `json:"seller_id"`
+	UID      string `json:"uid"`
 }
 
-func newAuthService(repository repository.Auth) *AuthService {
+func newAuthService(repository repository.Auth, redis Cache) *AuthService {
 	return &AuthService{
 		repository: repository,
+		redis:      redis,
 	}
 }
 
@@ -92,23 +111,39 @@ func (s *AuthService) GenerateJWT(login, password string) (string, error) {
 		}
 		return "", err
 	}
+	uuid := uuid.NewV4()
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, &tokenClaims{
 		StandardClaims: jwt.StandardClaims{
 			ExpiresAt: time.Now().Add(12 * time.Hour).Unix(),
 			IssuedAt:  time.Now().Unix(),
 		},
 		SellerId: seller,
+		UID:      uuid.String(),
 	})
-	tokensigned := uuid.NewV4()
-	tokenstring, err := token.SignedString(tokensigned.Bytes())
-	if err != nil {
-		return "", err
-	}
-	t := &models.Token{
-		SellerID:   seller,
-		Signignkey: tokensigned.String(),
-		Token:      tokenstring,
-	}
-	err = s.repository.CreateJWT(t)
+	tokenstring, err := token.SignedString(accessSecret)
+	s.redis.SetToken(seller, tokenstring)
 	return tokenstring, nil
+}
+
+func (s *AuthService) ValidateToken(claims *tokenClaims) error {
+}
+
+func (s *AuthService) createToken(userID int, expireMinutes int, secret string) (
+	toke string,
+	uid string,
+	exp int64,
+	err error,
+) {
+	exp = time.Now().Add(time.Minute * time.Duration(expireMinutes)).Unix()
+	uuid := uuid.NewV4()
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, &tokenClaims{
+		StandardClaims: jwt.StandardClaims{
+			ExpiresAt: time.Now().Add(12 * time.Hour).Unix(),
+			IssuedAt:  time.Now().Unix(),
+		},
+		SellerId: userID,
+		UID:      uuid.String(),
+	})
+	tokenstring, err := token.SignedString(secret)
+	return tokenstring, uuid.String(), exp, nil
 }
