@@ -1,6 +1,6 @@
 package models
 
 type CachedTokens struct {
-	AccesUID   string `json:"acess"`
+	AccessUID  string `json:"acess"`
 	RefreshUID string `json:"refresh"`
 }

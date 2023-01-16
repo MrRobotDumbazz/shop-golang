@@ -13,6 +13,7 @@ type RedisClient struct {
 type Redis interface {
 	InitRedis() *redis.Client
 	SetToken(SID int, token string)
+	GetToken(ID int) (string, error)
 }
 
 type RedisRepository struct {
@@ -42,12 +43,12 @@ func (r *RedisClient) SetToken(SID int, token string) {
 	r.client.Set(fmt.Sprintf("token-%d", SID), token, 0)
 }
 
-func (r *RedisClient) GetToken(ID int, token string) (error, string) {
+func (r *RedisClient) GetToken(ID int) (string, error) {
 	token, err := r.client.Get(fmt.Sprint("token-%d", ID)).Result()
 	if err != nil {
-		return err, ""
+		return "", err
 	}
-	return nil, token
+	return token, nil
 }
 
 // func (redisCli *RedisCli) SetValue(key string, value string, expiration ...interface{}) error {

@@ -2,7 +2,9 @@ package service
 
 import (
 	"database/sql"
+	"encoding/json"
 	"errors"
+	"fmt"
 	"regexp"
 	"shop/internal/repository"
 	"shop/models"
@@ -14,8 +16,8 @@ import (
 )
 
 const (
-	accessSecret  = "access_secret_string"
-	refreshSecret = "refresh_secret_string"
+	AccessSecret  = "access_secret_string"
+	RefreshSecret = "refresh_secret_string"
 )
 
 var (
@@ -26,7 +28,9 @@ var (
 
 type Auth interface {
 	CreateSeller(*models.Seller) error
-	GenerateJWT(login, password string) (string, error)
+	GenerateJWT(login, password string) (accessToken string, refreshToken string, exp int64, err error)
+	ParseToken(tokenString, secret string) (*TokenClaims, error)
+	ValidateToken(claims *TokenClaims, isRefresh bool) error
 	// ParseJWT(token string) (int, error)
 	// DeleteJWT(token string) error
 }
@@ -39,7 +43,7 @@ type Auth interface {
 
 type Cache interface {
 	SetToken(SID int, token string)
-	GetToken(ID int, token string)
+	GetToken(ID int) (string, error)
 }
 
 type AuthService struct {
@@ -47,7 +51,7 @@ type AuthService struct {
 	redis      Cache
 }
 
-type tokenClaims struct {
+type TokenClaims struct {
 	jwt.StandardClaims
 	SellerId int    `json:"seller_id"`
 	UID      string `json:"uid"`
@@ -103,29 +107,53 @@ func (s *AuthService) CreateSeller(seller *models.Seller) error {
 	return err
 }
 
-func (s *AuthService) GenerateJWT(login, password string) (string, error) {
+func (s *AuthService) GenerateJWT(login, password string) (accessToken string, refreshToken string, exp int64, err error) {
 	seller, err := s.repository.GetUser(login, password)
 	if err != nil {
 		if !errors.Is(err, sql.ErrNoRows) {
-			return "", ErrSellerNotFound
+			return "", "", 0, ErrSellerNotFound
 		}
-		return "", err
+		return "", "", 0, err
 	}
-	uuid := uuid.NewV4()
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, &tokenClaims{
-		StandardClaims: jwt.StandardClaims{
-			ExpiresAt: time.Now().Add(12 * time.Hour).Unix(),
-			IssuedAt:  time.Now().Unix(),
-		},
-		SellerId: seller,
-		UID:      uuid.String(),
+	var accessUID, refreshUID string
+	if accessToken, accessUID, exp, err = s.createToken(seller, 600, AccessSecret); err != nil {
+		return
+	}
+
+	if refreshToken, refreshUID, _, err = s.createToken(seller, 46000, RefreshSecret); err != nil {
+		return
+	}
+
+	cacheJSON, err := json.Marshal(models.CachedTokens{
+		AccessUID:  accessUID,
+		RefreshUID: refreshUID,
 	})
-	tokenstring, err := token.SignedString(accessSecret)
-	s.redis.SetToken(seller, tokenstring)
-	return tokenstring, nil
+	s.redis.SetToken(seller, string(cacheJSON))
+	return accessToken, refreshToken, exp, nil
 }
 
-func (s *AuthService) ValidateToken(claims *tokenClaims) error {
+func (s *AuthService) ValidateToken(claims *TokenClaims, isRefresh bool) error {
+	cacheJSON, err := s.redis.GetToken(claims.SellerId)
+	if err != nil {
+		return err
+	}
+	cachedTokens := new(models.CachedTokens)
+	err = json.Unmarshal([]byte(cacheJSON), cachedTokens)
+	if err != nil {
+		return nil
+	}
+	var tokenUID string
+	if isRefresh {
+		tokenUID = cachedTokens.RefreshUID
+	} else {
+		tokenUID = cachedTokens.AccessUID
+	}
+
+	if err != nil || tokenUID != claims.UID {
+		return errors.New("token not found")
+	}
+
+	return nil
 }
 
 func (s *AuthService) createToken(userID int, expireMinutes int, secret string) (
@@ -136,7 +164,7 @@ func (s *AuthService) createToken(userID int, expireMinutes int, secret string) 
 ) {
 	exp = time.Now().Add(time.Minute * time.Duration(expireMinutes)).Unix()
 	uuid := uuid.NewV4()
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, &tokenClaims{
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, &TokenClaims{
 		StandardClaims: jwt.StandardClaims{
 			ExpiresAt: time.Now().Add(12 * time.Hour).Unix(),
 			IssuedAt:  time.Now().Unix(),
@@ -146,4 +174,20 @@ func (s *AuthService) createToken(userID int, expireMinutes int, secret string) 
 	})
 	tokenstring, err := token.SignedString(secret)
 	return tokenstring, uuid.String(), exp, nil
+}
+func (s *AuthService) ParseToken(tokenString, secret string) (*TokenClaims, error) {
+	token, err := jwt.ParseWithClaims(tokenString, &TokenClaims{},
+		func(token *jwt.Token) (interface{}, error) {
+			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+				return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+			}
+			return []byte(secret), nil
+		})
+	if err != nil {
+		return nil, err
+	}
+	if claims, ok := token.Claims.(*TokenClaims); ok && token.Valid {
+		return claims, nil
+	}
+	return nil, errors.New("Error in claims")
 }
