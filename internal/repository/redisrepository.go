@@ -14,7 +14,6 @@ type RedisClient struct {
 }
 
 type Redis interface {
-	InitRedis() *redis.Client
 	SetToken(ctx context.Context, SID int, token string)
 	GetToken(ctx context.Context, ID int) (string, error)
 	DeleteToken(ctx context.Context, ID int)
@@ -25,7 +24,7 @@ type RedisRepository struct {
 	Redis
 }
 
-func (r *RedisClient) InitRedis() *redis.Client {
+func InitRedis() *redis.Client {
 	addr := fmt.Sprintf("localhost:6379")
 	return redis.NewClient(&redis.Options{
 		Addr: addr,

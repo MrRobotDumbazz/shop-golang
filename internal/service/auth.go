@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
 	"errors"
@@ -44,10 +45,10 @@ type Auth interface {
 // }
 
 type Cache interface {
-	SetToken(SID int, token string)
-	GetToken(ID int) (string, error)
-	DeleteToken(ID int)
-	ExpireToken(ID int)
+	SetToken(ctx context.Context, SID int, token string)
+	GetToken(ctx context.Context, ID int) (string, error)
+	DeleteToken(ctx context.Context, ID int)
+	ExpireToken(ctx context.Context, ID int)
 }
 
 type AuthService struct {
@@ -132,12 +133,15 @@ func (s *AuthService) GenerateJWT(login, password string) (accessToken string, r
 		AccessUID:  accessUID,
 		RefreshUID: refreshUID,
 	})
-	s.redis.SetToken(seller, string(cacheJSON))
+
+	ctx := contextWithTimeout()
+	s.redis.SetToken(ctx, seller, string(cacheJSON))
 	return accessToken, refreshToken, exp, nil
 }
 
 func (s *AuthService) ValidateToken(claims *TokenClaims, isRefresh bool) error {
-	cacheJSON, err := s.redis.GetToken(claims.SellerId)
+	ctx := contextWithTimeout()
+	cacheJSON, err := s.redis.GetToken(ctx, claims.SellerId)
 	if err != nil {
 		return err
 	}
@@ -198,9 +202,17 @@ func (s *AuthService) ParseToken(tokenString, secret string) (*TokenClaims, erro
 }
 
 func (s *AuthService) DeleteToken(claims *TokenClaims) {
-	s.redis.DeleteToken(claims.SellerId)
+	ctx := contextWithTimeout()
+	s.redis.DeleteToken(ctx, claims.SellerId)
 }
 
 func (s *AuthService) ExpireToken(claims *TokenClaims) {
-	s.redis.ExpireToken(claims.SellerId)
+	ctx := contextWithTimeout()
+	s.redis.ExpireToken(ctx, claims.SellerId)
+}
+
+func contextWithTimeout() context.Context {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
+	defer cancel()
+	return ctx
 }
