@@ -16,7 +16,7 @@ func NewHandler(services *service.Service) *Handler {
 	}
 }
 
-func (h *Handler) Handlers() *chi.Router {
+func (h *Handler) Handlers() *chi.Mux {
 	r := chi.NewRouter()
 	r.Get("/", h.HomePage)
 	r.Get("/sign-up", h.SignUp)

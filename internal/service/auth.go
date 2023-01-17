@@ -45,10 +45,10 @@ type Auth interface {
 // }
 
 type Cache interface {
-	SetToken(ctx context.Context, SID int, token string)
+	SetToken(ctx context.Context, SID int, token string) error
 	GetToken(ctx context.Context, ID int) (string, error)
 	DeleteToken(ctx context.Context, ID int)
-	ExpireToken(ctx context.Context, ID int)
+	ExpireToken(ctx context.Context, ID int) error
 }
 
 type AuthService struct {

@@ -14,10 +14,10 @@ type RedisClient struct {
 }
 
 type Redis interface {
-	SetToken(ctx context.Context, SID int, token string)
+	SetToken(ctx context.Context, SID int, token string) error
 	GetToken(ctx context.Context, ID int) (string, error)
 	DeleteToken(ctx context.Context, ID int)
-	ExpireToken(ctx context.Context, ID int)
+	ExpireToken(ctx context.Context, ID int) error
 }
 
 type RedisRepository struct {
@@ -43,16 +43,17 @@ func NewRedisRepository(client *redis.Client) *RedisRepository {
 	}
 }
 
-func (r *RedisClient) SetToken(ctx context.Context, SID int, token string) {
-	err := r.client.Set(ctx, fmt.Sprintf("token-%d", SID), token, time.Minute*10)
+func (r *RedisClient) SetToken(ctx context.Context, SID int, token string) error {
+	err := r.client.SetNX(ctx, fmt.Sprintf("token-%d", SID), token, time.Minute*10)
 	if err != nil {
 		log.Printf("error creating token in redis %v", err)
-		return
+		return err.Err()
 	}
+	return nil
 }
 
 func (r *RedisClient) GetToken(ctx context.Context, ID int) (string, error) {
-	token, err := r.client.Get(ctx, fmt.Sprint("token-%d", ID)).Result()
+	token, err := r.client.Get(ctx, fmt.Sprintf("token-%d", ID)).Result()
 	if err != nil {
 		return "", err
 	}
@@ -67,12 +68,13 @@ func (r *RedisClient) DeleteToken(ctx context.Context, ID int) {
 	}
 }
 
-func (r *RedisClient) ExpireToken(ctx context.Context, ID int) {
-	err := r.client.Expire(ctx, fmt.Sprintf("token-%d", ID), 10)
+func (r *RedisClient) ExpireToken(ctx context.Context, ID int) error {
+	err := r.client.ExpireNX(ctx, fmt.Sprintf("token-%d", ID), 10*time.Minute)
 	if err != nil {
 		log.Printf("error expiring token in redis %v", err)
-		return
+		return err.Err()
 	}
+	return nil
 }
 
 // func (redisCli *RedisCli) SetValue(key string, value string, expiration ...interface{}) error {
