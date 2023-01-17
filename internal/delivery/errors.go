@@ -14,7 +14,7 @@ type Error struct {
 	MessageError     string
 }
 
-func (h *Handler) Errors(w http.ResponseWriter, status int, err error) {
+func (h *Handler) Errors(w http.ResponseWriter, status int, msg string) {
 	w.WriteHeader(status)
 	t, err := template.ParseFiles("templates/errors.html")
 	if err != nil {
@@ -22,7 +22,7 @@ func (h *Handler) Errors(w http.ResponseWriter, status int, err error) {
 		log.Print(err)
 		return
 	}
-	error1 := Error{status, http.StatusText(status), strconv.Itoa(status) + " " + http.StatusText(status), err.Error()}
+	error1 := Error{status, http.StatusText(status), strconv.Itoa(status) + " " + http.StatusText(status), msg}
 	if err := t.Execute(w, error1); err != nil {
 		log.Print(err)
 		http.Error(w, strconv.Itoa(http.StatusInternalServerError)+" "+"Error executing file", http.StatusInternalServerError)

@@ -31,6 +31,8 @@ type Auth interface {
 	GenerateJWT(login, password string) (accessToken string, refreshToken string, exp int64, err error)
 	ParseToken(tokenString, secret string) (*TokenClaims, error)
 	ValidateToken(claims *TokenClaims, isRefresh bool) error
+	DeleteToken(claims *TokenClaims)
+	ExpireToken(claims *TokenClaims)
 	// ParseJWT(token string) (int, error)
 	// DeleteJWT(token string) error
 }
@@ -44,6 +46,8 @@ type Auth interface {
 type Cache interface {
 	SetToken(SID int, token string)
 	GetToken(ID int) (string, error)
+	DeleteToken(ID int)
+	ExpireToken(ID int)
 }
 
 type AuthService struct {
@@ -175,6 +179,7 @@ func (s *AuthService) createToken(userID int, expireMinutes int, secret string) 
 	tokenstring, err := token.SignedString(secret)
 	return tokenstring, uuid.String(), exp, nil
 }
+
 func (s *AuthService) ParseToken(tokenString, secret string) (*TokenClaims, error) {
 	token, err := jwt.ParseWithClaims(tokenString, &TokenClaims{},
 		func(token *jwt.Token) (interface{}, error) {
@@ -190,4 +195,12 @@ func (s *AuthService) ParseToken(tokenString, secret string) (*TokenClaims, erro
 		return claims, nil
 	}
 	return nil, errors.New("Error in claims")
+}
+
+func (s *AuthService) DeleteToken(claims *TokenClaims) {
+	s.redis.DeleteToken(claims.SellerId)
+}
+
+func (s *AuthService) ExpireToken(claims *TokenClaims) {
+	s.redis.ExpireToken(claims.SellerId)
 }

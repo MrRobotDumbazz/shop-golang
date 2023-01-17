@@ -7,7 +7,9 @@ import (
 	"shop/internal/service"
 	"strings"
 )
-type key int 
+
+type key int
+
 const (
 	tokenCtxKey key = iota
 )
@@ -29,6 +31,7 @@ func (h *Handler) ValidateJWT(handler http.HandlerFunc) http.Handler {
 			if err != nil {
 				return
 			}
+			h.services.ExpireToken(claims)
 			ctx := context.WithValue(r.Context(), tokenCtxKey, claims)
 			handler.ServeHTTP(w, r.WithContext(ctx))
 		}
