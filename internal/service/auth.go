@@ -29,11 +29,12 @@ var (
 
 type Auth interface {
 	CreateSeller(*models.Seller) error
-	GenerateJWT(login, password string) (accessToken string, refreshToken string, exp int64, err error)
+	GenerateJWT(login, password string) (accessToken string, exp int64, err error)
 	ParseToken(tokenString, secret string) (*TokenClaims, error)
-	ValidateToken(claims *TokenClaims, isRefresh bool) error
+	ValidateToken(claims *TokenClaims, isRefresh bool) (*models.Seller, error)
 	DeleteToken(claims *TokenClaims)
 	ExpireToken(claims *TokenClaims)
+	GenerateRefreshJWT(seller *models.Seller) (refreshToken string, err error)
 	// ParseJWT(token string) (int, error)
 	// DeleteJWT(token string) error
 }
@@ -112,43 +113,50 @@ func (s *AuthService) CreateSeller(seller *models.Seller) error {
 	return err
 }
 
-func (s *AuthService) GenerateJWT(login, password string) (accessToken string, refreshToken string, exp int64, err error) {
+func (s *AuthService) GenerateJWT(login, password string) (accessToken string, exp int64, err error) {
 	seller, err := s.repository.GetUser(login, password)
 	if err != nil {
 		if !errors.Is(err, sql.ErrNoRows) {
-			return "", "", 0, ErrSellerNotFound
+			return "", 0, ErrSellerNotFound
 		}
-		return "", "", 0, err
+		return "", 0, err
 	}
-	var accessUID, refreshUID string
+	var accessUID string
 	if accessToken, accessUID, exp, err = s.createToken(seller, 600, AccessSecret); err != nil {
 		return
 	}
-
-	if refreshToken, refreshUID, _, err = s.createToken(seller, 46000, RefreshSecret); err != nil {
-		return
-	}
-
 	cacheJSON, err := json.Marshal(models.CachedTokens{
-		AccessUID:  accessUID,
-		RefreshUID: refreshUID,
+		AccessUID: accessUID,
 	})
 
 	ctx := contextWithTimeout()
 	s.redis.SetToken(ctx, seller, string(cacheJSON))
-	return accessToken, refreshToken, exp, nil
+	return accessToken, exp, nil
 }
 
-func (s *AuthService) ValidateToken(claims *TokenClaims, isRefresh bool) error {
+func (s *AuthService) GenerateRefreshJWT(seller *models.Seller) (refreshToken string, err error) {
+	var refreshUID string
+	if refreshToken, refreshUID, _, err = s.createToken(seller.ID, 46000, RefreshSecret); err != nil {
+		return
+	}
+	cacheJSON, err := json.Marshal(models.CachedTokens{
+		RefreshUID: refreshUID,
+	})
+	ctx := contextWithTimeout()
+	s.redis.SetToken(ctx, seller.ID, string(cacheJSON))
+	return refreshToken, nil
+}
+
+func (s *AuthService) ValidateToken(claims *TokenClaims, isRefresh bool) (*models.Seller, error) {
 	ctx := contextWithTimeout()
 	cacheJSON, err := s.redis.GetToken(ctx, claims.SellerId)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	cachedTokens := new(models.CachedTokens)
 	err = json.Unmarshal([]byte(cacheJSON), cachedTokens)
 	if err != nil {
-		return nil
+		return nil, err
 	}
 	var tokenUID string
 	if isRefresh {
@@ -158,10 +166,11 @@ func (s *AuthService) ValidateToken(claims *TokenClaims, isRefresh bool) error {
 	}
 
 	if err != nil || tokenUID != claims.UID {
-		return errors.New("token not found")
+		return nil, errors.New("token not found")
 	}
-
-	return nil
+	seller := new(models.Seller)
+	seller, err = s.repository.GetUserInID(claims.SellerId)
+	return seller, nil
 }
 
 func (s *AuthService) createToken(userID int, expireMinutes int, secret string) (
@@ -174,8 +183,7 @@ func (s *AuthService) createToken(userID int, expireMinutes int, secret string) 
 	uuid := uuid.NewV4()
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, &TokenClaims{
 		StandardClaims: jwt.StandardClaims{
-			ExpiresAt: time.Now().Add(12 * time.Hour).Unix(),
-			IssuedAt:  time.Now().Unix(),
+			ExpiresAt: exp,
 		},
 		SellerId: userID,
 		UID:      uuid.String(),

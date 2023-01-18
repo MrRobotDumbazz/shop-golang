@@ -3,6 +3,8 @@ package repository
 import (
 	"database/sql"
 	"log"
+
+	_ "github.com/go-sql-driver/mysql"
 )
 
 const sellerTable = `CREATE TABLE IF NOT EXISTS "sellers" (
@@ -37,7 +39,7 @@ var tables = []string{sellerTable, clientTable, productTable}
 
 func Init() (*sql.DB, error) {
 	var err error
-	db, err := sql.Open("mysql", "root.password@/shopdb")
+	db, err := sql.Open("mysql", "root.password@tcp(localhost:8081)/shopdb")
 	if err != nil {
 		log.Println("❌ error | can't open DB")
 		return nil, err

@@ -29,3 +29,7 @@ func (h *Handler) Errors(w http.ResponseWriter, status int, msg string) {
 		return
 	}
 }
+
+func (h *Handler) Error(w http.ResponseWriter, r *http.Request, code int, err error) {
+	h.respond(w, r, code, map[string]string{"error": err.Error()})
+}

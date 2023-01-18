@@ -27,7 +27,7 @@ func (h *Handler) ValidateJWT(handler http.HandlerFunc) http.Handler {
 			if err != nil {
 				return
 			}
-			err = h.services.Auth.ValidateToken(claims, false)
+			_, err = h.services.Auth.ValidateToken(claims, false)
 			if err != nil {
 				return
 			}

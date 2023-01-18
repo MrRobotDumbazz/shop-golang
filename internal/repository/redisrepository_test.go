@@ -39,9 +39,9 @@ func TestSet(t *testing.T) {
 	db, mock := redismock.NewClientMock()
 	claimsID := 1
 	key := fmt.Sprintf("token-%d", claimsID)
-	mock.ExpectSetNX(key, claimsID, 10*time.Minute).SetErr(errors.New("FAIL"))
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
 	defer cancel()
+	mock.ExpectSetNX(key, claimsID, 10*time.Minute).SetErr(errors.New("FAIL"))
 	err := db.SetNX(ctx, key, claimsID, 10*time.Minute)
 	err2 := err.Err()
 	if err2 == nil || err2.Error() != "FAIL" {
