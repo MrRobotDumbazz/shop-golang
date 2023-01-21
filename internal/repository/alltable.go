@@ -7,11 +7,11 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 )
 
-const sellerTable = `CREATE TABLE IF NOT EXISTS "sellers" (
-	"id" INTEGER PRIMARY KEY AUTOINCREMENT UNIQUE NOT NULL,
-	"email" TEXT UNIQUE NOT NULL,
-	"password" TEXT NOT NULL
-);`
+const sellerTable = `CREATE TABLE IF NOT EXISTS sellers (
+	id INTEGER PRIMARY KEY AUTOINCREMENT UNIQUE NOT NULL,
+	email TEXT UNIQUE NOT NULL,
+	password TEXT NOT NULL
+	)`
 
 const clientTable = `CREATE TABLE IF NOT EXISTS "clients" (
 	"id" INTEGER PRIMARY KEY AUTOINCREMENT UNIQUE NOT NULL,
@@ -39,7 +39,7 @@ var tables = []string{sellerTable, clientTable, productTable}
 
 func Init() (*sql.DB, error) {
 	var err error
-	db, err := sql.Open("mysql", "root.password@tcp(localhost:8081)/shopdb")
+	db, err := sql.Open("mysql", "root:root@tcp(database:3306)/shopdb")
 	if err != nil {
 		log.Println("❌ error | can't open DB")
 		return nil, err

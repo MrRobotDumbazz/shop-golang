@@ -1,0 +1,48 @@
+version: '3'
+
+services:
+
+  database:
+    image: mysql:5.7.22
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_USER: root
+      MYSQL_PASSWORD: root
+      MYSQL_DATABASE: shopdb
+    container_name: golang-docker-shop-db
+    ports:
+      - 3306:3306
+    volumes:
+      - golang-docker-data:/var/lib/mysql 
+    restart: "on-failure"
+
+  web:
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+    ports:
+      - 8080:8080
+    volumes:
+      - .:/golang-docker
+    depends_on:
+      - database
+    container_name: golang-docker-web
+    environment:
+      - 'DB_PORT=3306'
+      - 'DB_HOST=database'
+    restart: "on-failure" 
+  pma:
+    image: phpmyadmin/phpmyadmin
+    depends_on:
+      - database
+    ports:
+      - 5003:80
+    environment:
+      - 'PMA_HOST=database'
+      - 'PMA_PORT=3306'
+    container_name: golang-docker-pma
+
+
+# persisted storage
+volumes:
+  golang-docker-data:
