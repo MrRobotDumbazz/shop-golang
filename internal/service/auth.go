@@ -29,7 +29,7 @@ var (
 
 type Auth interface {
 	CreateSeller(*models.Seller) error
-	GenerateJWT(login, password string) (accessToken string, exp int64, err error)
+	GenerateJWT(login, password string) (accessToken string, err error)
 	ParseToken(tokenString, secret string) (*TokenClaims, error)
 	ValidateToken(claims *TokenClaims, isRefresh bool) (*models.Seller, error)
 	DeleteToken(claims *TokenClaims)
@@ -113,16 +113,16 @@ func (s *AuthService) CreateSeller(seller *models.Seller) error {
 	return err
 }
 
-func (s *AuthService) GenerateJWT(login, password string) (accessToken string, exp int64, err error) {
+func (s *AuthService) GenerateJWT(login, password string) (accessToken string, err error) {
 	seller, err := s.repository.GetUser(login, password)
 	if err != nil {
 		if !errors.Is(err, sql.ErrNoRows) {
-			return "", 0, ErrSellerNotFound
+			return "", ErrSellerNotFound
 		}
-		return "", 0, err
+		return "", err
 	}
 	var accessUID string
-	if accessToken, accessUID, exp, err = s.createToken(seller, 600, AccessSecret); err != nil {
+	if accessToken, accessUID, _, err = s.createToken(seller, 600, AccessSecret); err != nil {
 		return
 	}
 	cacheJSON, err := json.Marshal(models.CachedTokens{
@@ -131,7 +131,7 @@ func (s *AuthService) GenerateJWT(login, password string) (accessToken string, e
 
 	ctx := contextWithTimeout()
 	s.redis.SetToken(ctx, seller, string(cacheJSON))
-	return accessToken, exp, nil
+	return accessToken, nil
 }
 
 func (s *AuthService) GenerateRefreshJWT(seller *models.Seller) (refreshToken string, err error) {

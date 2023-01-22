@@ -1,34 +1,100 @@
 package delivery
 
 import (
-	"encoding/json"
+	"errors"
+	"log"
 	"net/http"
 	"shop/internal/service"
 	"shop/models"
+	"text/template"
 )
 
 func (h *Handler) SignUp(w http.ResponseWriter, r *http.Request) {
-	type request struct {
-		Email    string `json:"email"`
-		Password string `json:"password"`
+	if r.URL.Path != "/signup" {
+		h.Errors(w, http.StatusNotFound, "")
 	}
-	req := &request{}
-	if err := json.NewDecoder(r.Body).Decode(req); err != nil {
-		h.Error(w, r, http.StatusBadRequest, err)
+	switch r.Method {
+	case "GET":
+		t, err := template.ParseFiles("templates/signup.html")
+		if err != nil {
+			log.Print(err)
+			h.Errors(w, http.StatusInternalServerError, err.Error())
+			return
+		}
+		if err = t.Execute(w, nil); err != nil {
+			log.Print(err)
+			h.Errors(w, http.StatusInternalServerError, err.Error())
+		}
+	case "POST":
+		if err := r.ParseForm(); err != nil {
+			h.Errors(w, http.StatusInternalServerError, err.Error())
+			return
+		}
+		email, ok := r.Form["email"]
+		if !ok {
+			h.Errors(w, http.StatusBadRequest, "Please use latin letters")
+			return
+		}
+		password, ok := r.Form["password"]
+		if !ok {
+			h.Errors(w, http.StatusBadRequest, "Please use stronger password")
+			return
+		}
+		seller := &models.Seller{
+			Email:    email[0],
+			Password: password[0],
+		}
+		if err := h.services.Auth.CreateSeller(seller); err != nil {
+			if errors.Is(err, service.ErrInvalidEmail) || errors.Is(err, service.ErrInvalidPassword) {
+				h.Errors(w, http.StatusBadRequest, err.Error())
+				return
+			}
+			h.Error(w, r, http.StatusUnprocessableEntity, err)
+			return
+		}
+	default:
+		h.Errors(w, http.StatusMethodNotAllowed, "")
 		return
 	}
-	u := &models.Seller{
-		Email:    req.Email,
-		Password: req.Password,
-	}
-	if err := h.services.Auth.CreateSeller(u); err != nil {
-		h.Error(w, r, http.StatusUnprocessableEntity, err)
-		return
-	}
-	h.respond(w, r, http.StatusCreated, u)
 }
 
 func (h *Handler) SignIn(w http.ResponseWriter, r *http.Request) {
+	if r.URL.Path != "/signin" {
+		h.Errors(w, http.StatusNotFound, "")
+	}
+	switch r.Method {
+	case "GET":
+		t, err := template.ParseFiles("templates/signin.html")
+		if err != nil {
+			log.Print(err)
+			h.Errors(w, http.StatusInternalServerError, err.Error())
+			return
+		}
+		if err = t.Execute(w, nil); err != nil {
+			log.Print(err)
+			h.Errors(w, http.StatusInternalServerError, err.Error())
+		}
+	case "POST":
+		if err := r.ParseForm(); err != nil {
+			h.Errors(w, http.StatusInternalServerError, err.Error())
+			return
+		}
+		email, ok := r.Form["email"]
+		if !ok {
+			h.Errors(w, http.StatusBadRequest, "Please use latin letters")
+			return
+		}
+		password, ok := r.Form["password"]
+		if !ok {
+			h.Errors(w, http.StatusBadRequest, "Please use stronger password")
+			return
+		}
+		_, err := h.services.GenerateJWT(email[0], password[0])
+		if err != nil {
+			h.Errors(w, http.StatusInternalServerError, err.Error())
+			return
+		}
+	}
 }
 
 func (h *Handler) Logout(w http.ResponseWriter, r *http.Request) {

@@ -19,7 +19,9 @@ func NewHandler(services *service.Service) *Handler {
 func (h *Handler) Handlers() *chi.Mux {
 	r := chi.NewRouter()
 	r.Get("/", h.HomePage)
-	r.Get("/sign-up", h.SignUp)
-	r.Post("/sign-up", h.SignUp)
+	r.Get("/signup", h.SignUp)
+	r.Post("/signup", h.SignUp)
+	r.Get("/signin", h.SignIn)
+	r.Post("/signin", h.SignIn)
 	return r
 }
