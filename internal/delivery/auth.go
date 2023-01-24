@@ -12,6 +12,7 @@ import (
 func (h *Handler) SignUp(w http.ResponseWriter, r *http.Request) {
 	if r.URL.Path != "/signup" {
 		h.Errors(w, http.StatusNotFound, "")
+		return
 	}
 	switch r.Method {
 	case "GET":
@@ -94,6 +95,9 @@ func (h *Handler) SignIn(w http.ResponseWriter, r *http.Request) {
 			h.Errors(w, http.StatusInternalServerError, err.Error())
 			return
 		}
+	default:
+		h.Errors(w, http.StatusMethodNotAllowed, "")
+		return
 	}
 }
 

@@ -9,7 +9,14 @@
     <title>Welcome to Shop!</title>
 </head>
 <body>
+    <div class="header-nav">
+
+    </div>
+    {{ if eq .HasToken false}}
     <a href="/signup" class="button" target=""></a>
     <a href="/signin" class="button" target=""></a>
+    {{ else }}
+    <a href="/logout" class="button" ></a>
+    {{end}}
 </body>
 </html>

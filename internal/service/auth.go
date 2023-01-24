@@ -2,10 +2,10 @@ package service
 
 import (
 	"context"
-	"database/sql"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"regexp"
 	"shop/internal/repository"
 	"shop/models"
@@ -113,16 +113,24 @@ func (s *AuthService) CreateSeller(seller *models.Seller) error {
 	return err
 }
 
+func comparePassword(s *models.Seller, password string) bool {
+	return bcrypt.CompareHashAndPassword([]byte(s.Password), []byte(password)) != nil
+}
+
 func (s *AuthService) GenerateJWT(login, password string) (accessToken string, err error) {
-	seller, err := s.repository.GetUser(login, password)
+	seller, err := s.repository.GetUser(login)
 	if err != nil {
-		if !errors.Is(err, sql.ErrNoRows) {
+		if errors.Is(err, repository.ErrRecordNotFound) {
+			log.Println("Record not found")
 			return "", ErrSellerNotFound
 		}
 		return "", err
 	}
+	if comparePassword(seller, password) {
+		return "", ErrSellerNotFound
+	}
 	var accessUID string
-	if accessToken, accessUID, _, err = s.createToken(seller, 600, AccessSecret); err != nil {
+	if accessToken, accessUID, _, err = s.createToken(seller.ID, 600, AccessSecret); err != nil {
 		return
 	}
 	cacheJSON, err := json.Marshal(models.CachedTokens{
@@ -130,7 +138,7 @@ func (s *AuthService) GenerateJWT(login, password string) (accessToken string, e
 	})
 
 	ctx := contextWithTimeout()
-	s.redis.SetToken(ctx, seller, string(cacheJSON))
+	s.redis.SetToken(ctx, seller.ID, string(cacheJSON))
 	return accessToken, nil
 }
 
@@ -170,6 +178,9 @@ func (s *AuthService) ValidateToken(claims *TokenClaims, isRefresh bool) (*model
 	}
 	seller := new(models.Seller)
 	seller, err = s.repository.GetUserInID(claims.SellerId)
+	seller = &models.Seller{
+		HasToken: true,
+	}
 	return seller, nil
 }
 

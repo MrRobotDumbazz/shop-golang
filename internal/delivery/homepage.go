@@ -1,6 +1,37 @@
 package delivery
 
-import "net/http"
+import (
+	"log"
+	"net/http"
+	"shop/internal/service"
+	"text/template"
+)
 
 func (h *Handler) HomePage(w http.ResponseWriter, r *http.Request) {
+	if r.URL.Path != "/" {
+		h.Errors(w, http.StatusNotFound, "")
+		return
+	}
+	switch r.Method {
+	case "GET":
+		claims, ok := r.Context().Value(tokenCtxKey).(*service.TokenClaims)
+		if !ok {
+			return
+		}
+		seller, err := h.services.ValidateToken(claims, false)
+		t, err := template.ParseFiles("templates/signup.html")
+		if err != nil {
+			log.Print(err)
+			h.Errors(w, http.StatusInternalServerError, err.Error())
+			return
+		}
+		if err = t.Execute(w, seller); err != nil {
+			log.Print(err)
+			h.Errors(w, http.StatusInternalServerError, err.Error())
+			return
+		}
+	default:
+		h.Errors(w, http.StatusMethodNotAllowed, "")
+		return
+	}
 }

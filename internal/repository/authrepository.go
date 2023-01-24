@@ -8,7 +8,7 @@ import (
 
 type Auth interface {
 	CreateSeller(*models.Seller) error
-	GetUser(email, password string) (int, error)
+	GetUser(email string) (*models.Seller, error)
 	GetUserInID(id int) (*models.Seller, error)
 }
 
@@ -31,22 +31,22 @@ func (r *AuthRepository) CreateSeller(s *models.Seller) error {
 	return nil
 }
 
-func (r *AuthRepository) GetUser(email, password string) (int, error) {
+func (r *AuthRepository) GetUser(email string) (*models.Seller, error) {
 	s := &models.Seller{}
-	err := r.db.QueryRow("SELECT id FROM shopdb.sellers WHERE email = ?, password = ?",
-		email, password).Scan(&s.ID)
+	err := r.db.QueryRow("SELECT id, password FROM shopdb.sellers WHERE email = ?",
+		email).Scan(&s.ID, &s.Password)
 	if err == sql.ErrNoRows {
-		return 0, ErrRecordNotFound
+		return nil, ErrRecordNotFound
 	}
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
-	return s.ID, nil
+	return s, nil
 }
 
 func (r *AuthRepository) GetUserInID(id int) (*models.Seller, error) {
 	s := &models.Seller{}
-	err := r.db.QueryRow("SELECT id FROM shopdb.sellers WHERE id", id).Scan(&s.ID)
+	err := r.db.QueryRow("SELECT id FROM shopdb.sellers WHERE id = ?", id).Scan(&s.ID)
 	if err == sql.ErrNoRows {
 		return nil, ErrRecordNotFound
 	}
