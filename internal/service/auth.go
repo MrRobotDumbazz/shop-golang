@@ -231,7 +231,7 @@ func (s *AuthService) ExpireToken(claims *TokenClaims) {
 }
 
 func contextWithTimeout() context.Context {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
-	defer cancel()
+	ctx, _ := context.WithTimeout(context.Background(), 10*time.Minute)
+	// defer cancel()
 	return ctx
 }

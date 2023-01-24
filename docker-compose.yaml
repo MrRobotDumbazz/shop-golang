@@ -15,7 +15,11 @@ services:
     volumes:
       - golang-docker-data:/var/lib/mysql 
     restart: "on-failure"
-
+  redis:
+    image: redis:alpine
+    container_name: redis
+    ports:
+      - "6379:6379"
   web:
     build:
       context: .

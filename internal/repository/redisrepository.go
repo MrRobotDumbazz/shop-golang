@@ -25,10 +25,18 @@ type RedisRepository struct {
 }
 
 func InitRedis() *redis.Client {
-	addr := fmt.Sprintf("localhost:6379")
-	return redis.NewClient(&redis.Options{
+	addr := fmt.Sprintf("redis:6379")
+	r := redis.NewClient(&redis.Options{
 		Addr: addr,
 	})
+
+	status := r.Ping(context.Background())
+	err := status.Err()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	return r
 }
 
 func newRedisRepository(conn *redis.Client) *RedisClient {
@@ -45,10 +53,7 @@ func NewRedisRepository(client *redis.Client) *RedisRepository {
 
 func (r *RedisClient) SetToken(ctx context.Context, SID int, token string) error {
 	err := r.client.SetNX(ctx, fmt.Sprintf("token-%d", SID), token, time.Minute*10)
-	if err != nil {
-		log.Printf("error creating token in redis %v", err)
-		return err.Err()
-	}
+	log.Println(err)
 	return nil
 }
 

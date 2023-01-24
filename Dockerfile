@@ -7,8 +7,8 @@ RUN apk add build-base && go build -o main ./cmd/main.go
 # stage 2
 FROM alpine:3.16 AS runner 
 LABEL stage=runner 
-LABEL maintainer="Made by AmayevArtyom && Mr.RobotDumbazz"
-LABEL org.label-schema.description="Docker image for Forum"
+LABEL maintainer="Made by Nurzhas && Mr.RobotDumbazz"
+LABEL org.label-schema.description="Docker image for Shop"
 WORKDIR /app
 COPY --from=builder /app/main ./
 COPY /internal /app/internal
