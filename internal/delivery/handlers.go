@@ -18,6 +18,7 @@ func NewHandler(services *service.Service) *Handler {
 
 func (h *Handler) Handlers() *chi.Mux {
 	r := chi.NewRouter()
+	r.Use(h.ValidateJWT)
 	r.Get("/", h.HomePage)
 	r.Get("/signup", h.SignUp)
 	r.Post("/signup", h.SignUp)

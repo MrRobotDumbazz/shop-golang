@@ -29,11 +29,13 @@ func main() {
 		log.Print(err)
 		return
 	}
+
 	repositories := repository.NewRepository(db)
 	redis := repository.InitRedis()
 	redisrepository := repository.NewRedisRepository(redis)
 	services := service.NewServices(repositories, *redisrepository)
 	handlers := delivery.NewHandler(services)
+
 	server := new(server.Server)
 	go func() {
 		if err := server.Start(":8080", handlers.Handlers()); err != nil {

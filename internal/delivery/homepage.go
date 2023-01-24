@@ -3,7 +3,7 @@ package delivery
 import (
 	"log"
 	"net/http"
-	"shop/internal/service"
+	"shop/models"
 	"text/template"
 )
 
@@ -14,12 +14,18 @@ func (h *Handler) HomePage(w http.ResponseWriter, r *http.Request) {
 	}
 	switch r.Method {
 	case "GET":
-		claims, ok := r.Context().Value(tokenCtxKey).(*service.TokenClaims)
+		claims, ok := r.Context().Value(tokenCtxKey).(int)
 		if !ok {
+			h.Errors(w, http.StatusInternalServerError, "Don't working context")
 			return
 		}
-		seller, err := h.services.ValidateToken(claims, false)
-		t, err := template.ParseFiles("templates/signup.html")
+		seller := models.Seller{}
+		if claims == 0 {
+			seller = models.Seller{
+				HasToken: false,
+			}
+		}
+		t, err := template.ParseFiles("templates/homepage.html")
 		if err != nil {
 			log.Print(err)
 			h.Errors(w, http.StatusInternalServerError, err.Error())

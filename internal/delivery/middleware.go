@@ -14,7 +14,7 @@ const (
 	tokenCtxKey key = iota
 )
 
-func (h *Handler) ValidateJWT(handler http.HandlerFunc) http.Handler {
+func (h *Handler) ValidateJWT(handler http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		authHeader := strings.Split(r.Header.Get("Authorization"), "Bearer ")
 		if len(authHeader) != 2 {
@@ -27,12 +27,12 @@ func (h *Handler) ValidateJWT(handler http.HandlerFunc) http.Handler {
 			if err != nil {
 				return
 			}
-			_, err = h.services.Auth.ValidateToken(claims, false)
+			seller, err := h.services.Auth.ValidateToken(claims, false)
 			if err != nil {
 				return
 			}
 			h.services.ExpireToken(claims)
-			ctx := context.WithValue(r.Context(), tokenCtxKey, claims)
+			ctx := context.WithValue(r.Context(), tokenCtxKey, seller.ID)
 			handler.ServeHTTP(w, r.WithContext(ctx))
 		}
 	})
