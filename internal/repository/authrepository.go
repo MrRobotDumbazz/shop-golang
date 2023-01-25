@@ -9,7 +9,7 @@ import (
 type Auth interface {
 	CreateSeller(*models.Seller) error
 	GetUser(email string) (*models.Seller, error)
-	GetUserInID(id int) (*models.Seller, error)
+	GetUserInID(id int) (models.Seller, error)
 }
 
 type AuthRepository struct {
@@ -44,14 +44,14 @@ func (r *AuthRepository) GetUser(email string) (*models.Seller, error) {
 	return s, nil
 }
 
-func (r *AuthRepository) GetUserInID(id int) (*models.Seller, error) {
-	s := &models.Seller{}
+func (r *AuthRepository) GetUserInID(id int) (models.Seller, error) {
+	s := models.Seller{}
 	err := r.db.QueryRow("SELECT id FROM shopdb.sellers WHERE id = ?", id).Scan(&s.ID)
 	if err == sql.ErrNoRows {
-		return nil, ErrRecordNotFound
+		return models.Seller{}, ErrRecordNotFound
 	}
 	if err != nil {
-		return nil, err
+		return models.Seller{}, err
 	}
 	return s, nil
 }

@@ -7,6 +7,7 @@ import (
 	"shop/internal/service"
 	"shop/models"
 	"text/template"
+	"time"
 )
 
 func (h *Handler) SignUp(w http.ResponseWriter, r *http.Request) {
@@ -77,7 +78,7 @@ func (h *Handler) SignIn(w http.ResponseWriter, r *http.Request) {
 		}
 	case "POST":
 		if err := r.ParseForm(); err != nil {
-			h.Errors(w, http.StatusInternalServerError, err.Error())
+			h.Errors(w, http.StatusBadRequest, err.Error())
 			return
 		}
 		email, ok := r.Form["email"]
@@ -90,11 +91,18 @@ func (h *Handler) SignIn(w http.ResponseWriter, r *http.Request) {
 			h.Errors(w, http.StatusBadRequest, "Please use stronger password")
 			return
 		}
-		_, err := h.services.GenerateJWT(email[0], password[0])
+		token, err := h.services.GenerateJWT(email[0], password[0])
 		if err != nil {
 			h.Errors(w, http.StatusInternalServerError, err.Error())
 			return
 		}
+		http.SetCookie(w, &http.Cookie{
+			Name:    "JWT",
+			Value:   token,
+			Path:    "/",
+			Secure:  true,
+			Expires: time.Now().Add(12 * time.Hour),
+		})
 	default:
 		h.Errors(w, http.StatusMethodNotAllowed, "")
 		return
@@ -102,7 +110,7 @@ func (h *Handler) SignIn(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) Logout(w http.ResponseWriter, r *http.Request) {
-	claims, ok := r.Context().Value(tokenCtxKey).(*service.TokenClaims)
+	claims, ok := r.Context().Value(tokenCtxKey).(service.TokenClaims)
 	if !ok {
 		return
 	}
@@ -110,7 +118,7 @@ func (h *Handler) Logout(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) RefreshToken(w http.ResponseWriter, r *http.Request) {
-	claims, ok := r.Context().Value(tokenCtxKey).(*service.TokenClaims)
+	claims, ok := r.Context().Value(tokenCtxKey).(service.TokenClaims)
 	if !ok {
 		return
 	}

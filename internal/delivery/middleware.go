@@ -2,11 +2,8 @@ package delivery
 
 import (
 	"context"
-	"fmt"
-	"log"
 	"net/http"
 	"shop/internal/service"
-	"strings"
 )
 
 type key int
@@ -17,24 +14,10 @@ const (
 
 func (h *Handler) ValidateJWT(handler http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		authHeader := strings.Split(r.Header.Get("Authorization"), "Bearer ")
-		if len(authHeader) != 2 {
-			fmt.Println("Malformed token")
-			handler.ServeHTTP(w, r)
-		} else {
-			token := authHeader[1]
-			claims, err := h.services.Auth.ParseToken(token, service.AccessSecret)
-			if err != nil {
-				log.Println(err)
-			}
-			seller, err := h.services.Auth.ValidateToken(claims, false)
-			if err != nil {
-				log.Println(err)
-			}
-			h.services.ExpireToken(claims)
-			ctx := context.WithValue(r.Context(), tokenCtxKey, seller.ID)
-			handler.ServeHTTP(w, r.WithContext(ctx))
-		}
+		cookie, _ := r.Cookie("JWT")
+		claims, _ := h.services.Auth.ParseToken(cookie.Value, service.AccessSecret)
+		ctx := context.WithValue(r.Context(), tokenCtxKey, claims)
+		handler.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
 

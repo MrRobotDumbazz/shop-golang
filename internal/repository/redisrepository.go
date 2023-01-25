@@ -53,6 +53,7 @@ func NewRedisRepository(client *redis.Client) *RedisRepository {
 
 func (r *RedisClient) SetToken(ctx context.Context, SID int, token string) error {
 	err := r.client.SetNX(ctx, fmt.Sprintf("token-%d", SID), token, time.Minute*10)
+	// log.Println(err.Err().Error)
 	log.Println(err)
 	return nil
 }

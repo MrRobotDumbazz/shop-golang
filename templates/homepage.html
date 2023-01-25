@@ -10,13 +10,12 @@
 </head>
 <body>
     <div class="header-nav">
-
+        {{ if eq .HasToken false}}
+        <a href="/signup" class="button" target="">Sign-Up</a>
+        <a href="/signin" class="button" target="">Sign-In</a>
+        {{ else }}
+        <a href="/logout" class="button" >Logout</a>
+        {{end}}
     </div>
-    {{ if eq .HasToken false}}
-    <a href="/signup" class="button" target=""></a>
-    <a href="/signin" class="button" target=""></a>
-    {{ else }}
-    <a href="/logout" class="button" ></a>
-    {{end}}
 </body>
 </html>
