@@ -114,6 +114,12 @@ func (h *Handler) Logout(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
+	http.SetCookie(w, &http.Cookie{
+		Name:   "",
+		Value:  "",
+		Path:   "/",
+		Secure: true,
+	})
 	h.services.DeleteToken(claims)
 }
 

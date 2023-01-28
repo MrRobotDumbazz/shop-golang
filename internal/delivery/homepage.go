@@ -20,6 +20,10 @@ func (h *Handler) HomePage(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		seller, err := h.services.ValidateToken(claims, false)
+		if err != nil {
+			h.Errors(w, http.StatusInternalServerError, err.Error())
+			return
+		}
 		t, err := template.ParseFiles("templates/homepage.html")
 		if err != nil {
 			log.Print(err)

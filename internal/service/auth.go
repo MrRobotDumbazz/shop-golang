@@ -178,6 +178,9 @@ func (s *AuthService) ValidateToken(claims TokenClaims, isRefresh bool) (models.
 	}
 	seller := models.Seller{}
 	seller, err = s.repository.GetUserInID(claims.SellerId)
+	if err != nil {
+		return models.Seller{}, err
+	}
 	seller = models.Seller{
 		HasToken: true,
 	}

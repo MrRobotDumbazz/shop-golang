@@ -14,8 +14,16 @@ const (
 
 func (h *Handler) ValidateJWT(handler http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		cookie, _ := r.Cookie("JWT")
-		claims, _ := h.services.Auth.ParseToken(cookie.Value, service.AccessSecret)
+		claims := service.TokenClaims{}
+		cookie, err := r.Cookie("JWT")
+		if err != nil {
+			if err == http.ErrNoCookie {
+				claims = service.TokenClaims{}
+			}
+			claims = service.TokenClaims{}
+		} else {
+			claims, _ = h.services.Auth.ParseToken(cookie.Value, service.AccessSecret)
+		}
 		ctx := context.WithValue(r.Context(), tokenCtxKey, claims)
 		handler.ServeHTTP(w, r.WithContext(ctx))
 	})
