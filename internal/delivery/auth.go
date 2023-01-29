@@ -51,7 +51,7 @@ func (h *Handler) SignUp(w http.ResponseWriter, r *http.Request) {
 				h.Errors(w, http.StatusBadRequest, err.Error())
 				return
 			}
-			h.Error(w, r, http.StatusUnprocessableEntity, err)
+			h.Errors(w, http.StatusUnprocessableEntity, err.Error())
 			return
 		}
 	default:

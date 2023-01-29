@@ -60,26 +60,18 @@ func (r *RedisClient) SetToken(ctx context.Context, SID int, token string) error
 
 func (r *RedisClient) GetToken(ctx context.Context, ID int) (string, error) {
 	token, err := r.client.Get(ctx, fmt.Sprintf("token-%d", ID)).Result()
-	if err != nil {
-		return "", err
-	}
+	log.Println(err)
 	return token, nil
 }
 
 func (r *RedisClient) DeleteToken(ctx context.Context, ID int) {
 	err := r.client.Del(ctx, fmt.Sprintf("token-%d", ID))
-	if err != nil {
-		log.Printf("error deleting token in redis %v", err)
-		return
-	}
+	log.Println(err)
 }
 
 func (r *RedisClient) ExpireToken(ctx context.Context, ID int) error {
 	err := r.client.ExpireNX(ctx, fmt.Sprintf("token-%d", ID), 10*time.Minute)
-	if err != nil {
-		log.Printf("error expiring token in redis %v", err)
-		return err.Err()
-	}
+	log.Println(err)
 	return nil
 }
 
