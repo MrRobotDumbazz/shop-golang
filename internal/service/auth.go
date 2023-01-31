@@ -30,10 +30,10 @@ var (
 type Auth interface {
 	CreateSeller(*models.Seller) error
 	GenerateJWT(login, password string) (accessToken string, err error)
-	ParseToken(tokenString, secret string) (TokenClaims, error)
-	ValidateToken(claims TokenClaims, isRefresh bool) (models.Seller, error)
-	DeleteToken(claims TokenClaims)
-	ExpireToken(claims TokenClaims)
+	ParseToken(tokenString, secret string) (*TokenClaims, error)
+	ValidateToken(claims *TokenClaims, isRefresh bool) (models.Seller, error)
+	DeleteToken(claims *TokenClaims)
+	ExpireToken(claims *TokenClaims)
 	GenerateRefreshJWT(seller models.Seller) (refreshToken string, err error)
 	// ParseJWT(token string) (int, error)
 	// DeleteJWT(token string) error
@@ -133,6 +133,7 @@ func (s *AuthService) GenerateJWT(login, password string) (accessToken string, e
 	if accessToken, accessUID, _, err = s.createToken(seller.ID, 600, AccessSecret); err != nil {
 		return "", err
 	}
+	log.Printf("Token is: %s", accessToken)
 	cacheJSON, err := json.Marshal(models.CachedTokens{
 		AccessUID: accessUID,
 	})
@@ -155,7 +156,7 @@ func (s *AuthService) GenerateRefreshJWT(seller models.Seller) (refreshToken str
 	return refreshToken, nil
 }
 
-func (s *AuthService) ValidateToken(claims TokenClaims, isRefresh bool) (models.Seller, error) {
+func (s *AuthService) ValidateToken(claims *TokenClaims, isRefresh bool) (models.Seller, error) {
 	ctx := contextWithTimeout()
 	cacheJSON, err := s.redis.GetToken(ctx, claims.SellerId)
 	if err != nil {
@@ -202,11 +203,15 @@ func (s *AuthService) createToken(userID int, expireMinutes int, secret string) 
 		SellerId: userID,
 		UID:      uuid.String(),
 	})
-	tokenstring, err := token.SignedString(secret)
+	tokenstring, err := token.SignedString([]byte(secret))
+	if err != nil {
+		return "", "", 0, err
+	}
+	log.Printf("Token is %s", tokenstring)
 	return tokenstring, uuid.String(), exp, nil
 }
 
-func (s *AuthService) ParseToken(tokenString, secret string) (TokenClaims, error) {
+func (s *AuthService) ParseToken(tokenString, secret string) (*TokenClaims, error) {
 	token, err := jwt.ParseWithClaims(tokenString, &TokenClaims{},
 		func(token *jwt.Token) (interface{}, error) {
 			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
@@ -215,20 +220,21 @@ func (s *AuthService) ParseToken(tokenString, secret string) (TokenClaims, error
 			return []byte(secret), nil
 		})
 	if err != nil {
-		return TokenClaims{}, err
+		return nil, err
 	}
-	if claims, ok := token.Claims.(TokenClaims); ok && token.Valid {
+	if claims, ok := token.Claims.(*TokenClaims); ok && token.Valid {
+		log.Printf("Token claims %v", claims)
 		return claims, nil
 	}
-	return TokenClaims{}, errors.New("Error in claims")
+	return nil, errors.New("Error in claims")
 }
 
-func (s *AuthService) DeleteToken(claims TokenClaims) {
+func (s *AuthService) DeleteToken(claims *TokenClaims) {
 	ctx := contextWithTimeout()
 	s.redis.DeleteToken(ctx, claims.SellerId)
 }
 
-func (s *AuthService) ExpireToken(claims TokenClaims) {
+func (s *AuthService) ExpireToken(claims *TokenClaims) {
 	ctx := contextWithTimeout()
 	s.redis.ExpireToken(ctx, claims.SellerId)
 }

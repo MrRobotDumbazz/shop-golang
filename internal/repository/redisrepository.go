@@ -52,15 +52,20 @@ func NewRedisRepository(client *redis.Client) *RedisRepository {
 }
 
 func (r *RedisClient) SetToken(ctx context.Context, SID int, token string) error {
-	err := r.client.SetNX(ctx, fmt.Sprintf("token-%d", SID), token, time.Minute*10)
+	log.Printf("Token UUID: %s", token)
+	err := r.client.Set(ctx, fmt.Sprintf("token-%d", SID), token, time.Minute*10)
 	// log.Println(err.Err().Error)
 	log.Println(err)
 	return nil
 }
 
 func (r *RedisClient) GetToken(ctx context.Context, ID int) (string, error) {
+	log.Printf("Claims ID: %d", ID)
 	token, err := r.client.Get(ctx, fmt.Sprintf("token-%d", ID)).Result()
 	log.Println(err)
+	if err != nil {
+		return "", err
+	}
 	return token, nil
 }
 
@@ -70,7 +75,7 @@ func (r *RedisClient) DeleteToken(ctx context.Context, ID int) {
 }
 
 func (r *RedisClient) ExpireToken(ctx context.Context, ID int) error {
-	err := r.client.ExpireNX(ctx, fmt.Sprintf("token-%d", ID), 10*time.Minute)
+	err := r.client.Expire(ctx, fmt.Sprintf("token-%d", ID), 10*time.Minute)
 	log.Println(err)
 	return nil
 }

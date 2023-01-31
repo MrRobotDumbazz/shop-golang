@@ -2,6 +2,7 @@ package delivery
 
 import (
 	"context"
+	"log"
 	"net/http"
 	"shop/internal/service"
 )
@@ -14,15 +15,17 @@ const (
 
 func (h *Handler) ValidateJWT(handler http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		claims := service.TokenClaims{}
+		claims := &service.TokenClaims{}
 		cookie, err := r.Cookie("JWT")
 		if err != nil {
 			if err == http.ErrNoCookie {
-				claims = service.TokenClaims{}
+				claims = nil
 			}
-			claims = service.TokenClaims{}
+			log.Printf("Error in cookie: %v", err)
+			claims = nil
 		} else {
 			claims, _ = h.services.Auth.ParseToken(cookie.Value, service.AccessSecret)
+			log.Printf("Claims: %v", claims)
 		}
 		ctx := context.WithValue(r.Context(), tokenCtxKey, claims)
 		handler.ServeHTTP(w, r.WithContext(ctx))

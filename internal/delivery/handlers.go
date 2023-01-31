@@ -24,5 +24,6 @@ func (h *Handler) Handlers() *chi.Mux {
 	r.Post("/signup", h.SignUp)
 	r.Get("/signin", h.SignIn)
 	r.Post("/signin", h.SignIn)
+	r.Get("/logout", h.Logout)
 	return r
 }

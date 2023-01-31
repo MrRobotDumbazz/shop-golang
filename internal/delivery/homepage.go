@@ -14,11 +14,12 @@ func (h *Handler) HomePage(w http.ResponseWriter, r *http.Request) {
 	}
 	switch r.Method {
 	case "GET":
-		claims, ok := r.Context().Value(tokenCtxKey).(service.TokenClaims)
+		claims, ok := r.Context().Value(tokenCtxKey).(*service.TokenClaims)
 		if !ok {
 			h.Errors(w, http.StatusInternalServerError, "Don't working context")
 			return
 		}
+		log.Printf("Claims: %v", claims)
 		seller, err := h.services.ValidateToken(claims, false)
 		if err != nil {
 			h.Errors(w, http.StatusInternalServerError, err.Error())

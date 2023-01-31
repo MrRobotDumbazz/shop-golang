@@ -96,6 +96,7 @@ func (h *Handler) SignIn(w http.ResponseWriter, r *http.Request) {
 			h.Errors(w, http.StatusInternalServerError, err.Error())
 			return
 		}
+		log.Printf("Token UUID: %s", token)
 		http.SetCookie(w, &http.Cookie{
 			Name:    "JWT",
 			Value:   token,
@@ -110,7 +111,7 @@ func (h *Handler) SignIn(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) Logout(w http.ResponseWriter, r *http.Request) {
-	claims, ok := r.Context().Value(tokenCtxKey).(service.TokenClaims)
+	claims, ok := r.Context().Value(tokenCtxKey).(*service.TokenClaims)
 	if !ok {
 		return
 	}
@@ -124,7 +125,7 @@ func (h *Handler) Logout(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) RefreshToken(w http.ResponseWriter, r *http.Request) {
-	claims, ok := r.Context().Value(tokenCtxKey).(service.TokenClaims)
+	claims, ok := r.Context().Value(tokenCtxKey).(*service.TokenClaims)
 	if !ok {
 		return
 	}
