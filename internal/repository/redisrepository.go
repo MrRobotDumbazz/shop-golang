@@ -61,11 +61,7 @@ func (r *RedisClient) SetToken(ctx context.Context, SID int, token string) error
 
 func (r *RedisClient) GetToken(ctx context.Context, ID int) (string, error) {
 	log.Printf("Claims ID: %d", ID)
-	token, err := r.client.Get(ctx, fmt.Sprintf("token-%d", ID)).Result()
-	log.Println(err)
-	if err != nil {
-		return "", err
-	}
+	token, _ := r.client.Get(ctx, fmt.Sprintf("token-%d", ID)).Result()
 	return token, nil
 }
 
