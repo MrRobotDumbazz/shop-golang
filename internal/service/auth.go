@@ -165,14 +165,12 @@ func (s *AuthService) ValidateToken(claims *TokenClaims, isRefresh bool) (models
 	cachedTokens := new(models.CachedTokens)
 	seller := models.Seller{}
 	err = json.Unmarshal([]byte(cacheJSON), cachedTokens)
-	seller = models.Seller{
-		HasToken: true,
-	}
 	if err != nil {
 		log.Print(err)
 		seller = models.Seller{
 			HasToken: false,
 		}
+		return seller, nil
 	}
 	var tokenUID string
 	if isRefresh {
@@ -185,6 +183,7 @@ func (s *AuthService) ValidateToken(claims *TokenClaims, isRefresh bool) (models
 		seller = models.Seller{
 			HasToken: false,
 		}
+		return seller, nil
 	}
 	seller, err = s.repository.GetUserInID(claims.SellerId)
 	if err != nil {
@@ -192,6 +191,10 @@ func (s *AuthService) ValidateToken(claims *TokenClaims, isRefresh bool) (models
 		seller = models.Seller{
 			HasToken: false,
 		}
+		return seller, nil
+	}
+	seller = models.Seller{
+		HasToken: true,
 	}
 	return seller, nil
 }
