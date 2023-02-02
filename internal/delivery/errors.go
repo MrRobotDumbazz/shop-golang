@@ -15,6 +15,7 @@ type Error struct {
 }
 
 func (h *Handler) Errors(w http.ResponseWriter, status int, msg string) {
+	log.Println(msg)
 	w.WriteHeader(status)
 	t, err := template.ParseFiles("templates/errors.html")
 	if err != nil {
