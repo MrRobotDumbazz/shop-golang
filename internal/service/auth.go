@@ -16,6 +16,8 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+//go:generate mockgen -source=auth.go -destination=mocks/mockauth.go
+
 const (
 	AccessSecret  = "access_secret_string"
 	RefreshSecret = "refresh_secret_string"

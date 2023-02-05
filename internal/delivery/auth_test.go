@@ -5,47 +5,57 @@ import (
 	"log"
 	"net/http"
 	"net/http/httptest"
-	"net/url"
 	"shop/internal/delivery"
 	"shop/internal/repository"
 	"shop/internal/service"
+	mock_service "shop/internal/service/mocks"
+	"shop/models"
 	"testing"
 
 	"github.com/go-redis/redismock/v9"
+	"github.com/golang/mock/gomock"
+	"github.com/stretchr/testify/assert"
 )
 
-func TestSignUp(t *testing.T) {
-	db, err := repository.Init()
-	if err != nil {
-		t.Errorf("Error opening db: %v\n", err)
+func TestHandler_SignUp(t *testing.T) {
+	type mockBehavior func(s *mock_service.MockAuth, seller models.Seller)
+	testTable := []struct {
+		name                string
+		inputBody           string
+		inputSeller         models.Seller
+		mockBehavior        mockBehavior
+		expectedStatusCode  int
+		expectedRequestBody string
+	}{
+		{
+			name:      "OK",
+			inputBody: `{"email":"2232@gmail.com", "password":"123456"}`,
+			inputSeller: models.Seller{
+				Email:    "2232@gmail.com",
+				Password: "123456",
+			},
+			mockBehavior: func(s *mock_service.MockAuth, seller models.Seller) {
+				s.EXPECT().CreateSeller(seller).Return(2, nil)
+			},
+			expectedStatusCode:  200,
+			expectedRequestBody: `{"id":2}`,
+		},
 	}
-	defer func() {
-		if err := db.Close(); err != nil {
-			t.Errorf("Can't close db err: %v\n", err)
-		} else {
-			log.Print("db closed")
-		}
-	}()
-	repositories := repository.NewRepository(db)
-	redis, _ := redismock.NewClientMock()
-	redisrepository := repository.NewRedisRepository(redis)
-	services := service.NewServices(repositories, *redisrepository)
-	handlers := delivery.NewHandler(services)
-
-	form := url.Values{}
-	form.Add("email", "example@gmail.com")
-	form.Add("password", "secret123")
-	req, err := http.NewRequest("POST", "/signup", bytes.NewBufferString(form.Encode()))
-	if err != nil {
-		t.Errorf("Error httprequest because: %v\n", err)
-	}
-	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
-	res := httptest.NewRecorder()
-	handler := http.HandlerFunc(handlers.SignUp)
-	handler.ServeHTTP(res, req)
-
-	if res.Code != http.StatusOK {
-		t.Errorf("Expected status code %d, but got %d", http.StatusOK, res.Code)
+	for _, testCase := range testTable {
+		t.Run(testCase.name, func(t *testing.T) {
+			c := gomock.NewController(t)
+			defer c.Finish()
+			auth := mock_service.NewMockAuth(c)
+			testCase.mockBehavior(auth, testCase.inputSeller)
+			services := service.Service{Auth: auth}
+			handlers := delivery.NewHandler(&services)
+			handler := http.HandlerFunc(handlers.SignUp)
+			w := httptest.NewRecorder()
+			req := httptest.NewRequest("POST", "/signup", bytes.NewBufferString(testCase.inputBody))
+			handler.ServeHTTP(w, req)
+			assert.Equal(t, testCase.expectedStatusCode, w.Code)
+			assert.Equal(t, testCase.expectedRequestBody, w.Body.String())
+		})
 	}
 }
 

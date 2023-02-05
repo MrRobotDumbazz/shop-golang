@@ -2,6 +2,8 @@ package service
 
 import "shop/internal/repository"
 
+//go:generate mockgen -source=service.go -destination=mocks/mockservice.go
+
 type Service struct {
 	Seller
 	Product
