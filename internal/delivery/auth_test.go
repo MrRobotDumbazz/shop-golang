@@ -21,24 +21,27 @@ func TestHandler_SignUp(t *testing.T) {
 	type mockBehavior func(s *mock_service.MockAuth, seller models.Seller)
 	testTable := []struct {
 		name                string
-		inputBody           string
+		inputBody           map[string]string
 		inputSeller         models.Seller
 		mockBehavior        mockBehavior
 		expectedStatusCode  int
 		expectedRequestBody string
 	}{
 		{
-			name:      "OK",
-			inputBody: `{"email":"2232@gmail.com", "password":"123456"}`,
+			name: "OK",
+			inputBody: map[string]string{
+				"email":    "2232@gmail.com",
+				"password": "123456",
+			},
 			inputSeller: models.Seller{
 				Email:    "2232@gmail.com",
 				Password: "123456",
 			},
 			mockBehavior: func(s *mock_service.MockAuth, seller models.Seller) {
-				s.EXPECT().CreateSeller(seller).Return(2, nil)
+				s.EXPECT().CreateSeller(seller).Return(nil)
 			},
 			expectedStatusCode:  200,
-			expectedRequestBody: `{"id":2}`,
+			expectedRequestBody: `{"id":1}`,
 		},
 	}
 	for _, testCase := range testTable {
@@ -51,7 +54,9 @@ func TestHandler_SignUp(t *testing.T) {
 			handlers := delivery.NewHandler(&services)
 			handler := http.HandlerFunc(handlers.SignUp)
 			w := httptest.NewRecorder()
-			req := httptest.NewRequest("POST", "/signup", bytes.NewBufferString(testCase.inputBody))
+			req := httptest.NewRequest("POST", "/signup", nil)
+			req.PostFormValue(testCase.inputBody["email"])
+			req.PostFormValue(testCase.inputBody["password"])
 			handler.ServeHTTP(w, req)
 			assert.Equal(t, testCase.expectedStatusCode, w.Code)
 			assert.Equal(t, testCase.expectedRequestBody, w.Body.String())
