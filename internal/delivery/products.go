@@ -16,7 +16,7 @@ func (h *Handler) create_product(w http.ResponseWriter, r *http.Request) {
 	}
 	switch r.Method {
 	case "GET":
-		t, err := template.ParseFiles("templates/createpost.html")
+		t, err := template.ParseFiles("templates/createproduct.html")
 		if err != nil {
 			log.Print(err)
 			h.Errors(w, http.StatusInternalServerError, err.Error())
@@ -82,7 +82,7 @@ func (h *Handler) create_product(w http.ResponseWriter, r *http.Request) {
 			h.Errors(w, http.StatusInternalServerError, err.Error())
 			return
 		}
-		t, err := template.ParseFiles("templates/createpost.html")
+		t, err := template.ParseFiles("templates/createproduct.html")
 		if err != nil {
 			log.Print(err)
 			h.Errors(w, http.StatusInternalServerError, err.Error())
@@ -123,7 +123,7 @@ func (h *Handler) product(w http.ResponseWriter, r *http.Request) {
 	}
 	switch r.Method {
 	case "GET":
-		t, err := template.ParseFiles("templates/createpost.html")
+		t, err := template.ParseFiles("templates/createproduct.html")
 		if err != nil {
 			log.Print(err)
 			h.Errors(w, http.StatusInternalServerError, err.Error())

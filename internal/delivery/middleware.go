@@ -16,6 +16,7 @@ const (
 func (h *Handler) ValidateJWT(handler http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		claims := &service.TokenClaims{}
+		seller := 
 		cookie, err := r.Cookie("JWT")
 		if err != nil {
 			if err == http.ErrNoCookie {
@@ -24,10 +25,12 @@ func (h *Handler) ValidateJWT(handler http.Handler) http.Handler {
 			log.Printf("Error in cookie: %v", err)
 			claims = nil
 		} else {
-			claims, _ = h.services.Auth.ParseToken(cookie.Value, service.AccessSecret)
+			claims, err = h.services.Auth.ParseToken(cookie.Value, service.AccessSecret)
 			log.Printf("Claims: %v", claims)
+			log.Printf("Error: %v", err)
+			seller, err = h.services.ValidateToken(claims, false)
 		}
-		ctx := context.WithValue(r.Context(), tokenCtxKey, claims)
+		ctx := context.WithValue(r.Context(), tokenCtxKey, seller.ID)
 		handler.ServeHTTP(w, r.WithContext(ctx))
 	})
 }

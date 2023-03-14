@@ -24,7 +24,7 @@ func newProductRepository(db *sql.DB) *ProductRepository {
 
 func (r *ProductRepository) GetNewAllProducts() ([]models.Product, error) {
 	var products []models.Product
-	query := "SELECT *  FROM shodb.products ORDER BY DESC;"
+	query := "SELECT *  FROM shopdb.product ORDER by name_product;"
 	rows, err := r.db.Query(query)
 	if err != nil {
 		return nil, err
@@ -41,7 +41,7 @@ func (r *ProductRepository) GetNewAllProducts() ([]models.Product, error) {
 
 func (r *ProductRepository) GetProductByProductID(id int) (*models.Product, error) {
 	p := &models.Product{}
-	err := r.db.QueryRow("SELECT * FROM shopdb.products WHERE id = ?", id).Scan(&p.ID, &p.Name, &p.Description, &p.Price, &p.Category)
+	err := r.db.QueryRow("SELECT * FROM shopdb.product WHERE id = ?", id).Scan(&p.ID, &p.Name, &p.Description, &p.Price, &p.Category)
 	if err == sql.ErrNoRows {
 		return nil, ErrRecordNotFound
 	}
@@ -53,7 +53,7 @@ func (r *ProductRepository) GetProductByProductID(id int) (*models.Product, erro
 
 func (r *ProductRepository) GetProductByCategory(category string) ([]models.Product, error) {
 	var products []models.Product
-	query := "SELECT *  FROM shopdb.products ORDER BY DESC WHERE category = ?;"
+	query := "SELECT *  FROM shopdb.product ORDER BY DESC WHERE category = ?;"
 	rows, err := r.db.Query(query, category)
 	if err != nil {
 		return nil, err
@@ -69,7 +69,7 @@ func (r *ProductRepository) GetProductByCategory(category string) ([]models.Prod
 }
 
 func (r *ProductRepository) CreateProduct(p *models.Product) error {
-	if _, err := r.db.Exec("INSERT INTO shopdb.products (seller_id, name_product, company, description, category, price) VALUES (?, ?, ?, ?, ?, ?)", p.SellerID, p.Name, p.Company, p.Description, p.Category, p.Price); err != nil {
+	if _, err := r.db.Exec("INSERT INTO shopdb.product (seller_id, name_product, company, description, category, price) VALUES (?, ?, ?, ?, ?, ?)", p.SellerID, p.Name, p.Company, p.Description, p.Category, p.Price); err != nil {
 		return err
 	}
 	return nil

@@ -25,5 +25,8 @@ func (h *Handler) Handlers() *chi.Mux {
 	r.Get("/signin", h.SignIn)
 	r.Post("/signin", h.SignIn)
 	r.Get("/logout", h.Logout)
+	r.Get("/createproduct", h.create_product)
+	r.Post("/createproduct", h.create_product)
+	r.Post("/product", h.product)
 	return r
 }

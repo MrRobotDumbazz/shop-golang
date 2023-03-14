@@ -3,6 +3,7 @@ LABEL stage=builder
 ENV GO111MODULE=on
 WORKDIR /app 
 COPY . .
+RUN go install github.com/cosmtrek/air@latest
 RUN apk add build-base && go build -o main ./cmd/main.go
 # stage 2
 FROM alpine:3.16 AS runner 
