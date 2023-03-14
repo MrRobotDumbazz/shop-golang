@@ -26,6 +26,7 @@ func (h *Handler) SignUp(w http.ResponseWriter, r *http.Request) {
 		if err = t.Execute(w, nil); err != nil {
 			log.Print(err)
 			h.Errors(w, http.StatusInternalServerError, err.Error())
+			return
 		}
 	case "POST":
 		if err := r.ParseForm(); err != nil {

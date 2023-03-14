@@ -22,8 +22,10 @@ const clientTable = `CREATE TABLE IF NOT EXISTS clients (
 const productTable = `CREATE TABLE IF NOT EXISTS product (
 	id INTEGER PRIMARY KEY AUTO_INCREMENT UNIQUE NOT NULL, 
 	seller_id INTEGER NOT NULL,
+	name_product TEXT NOT NULL,
 	company TEXT NOT NULL,
 	description TEXT NOT NULL, 
+	category TEXT NOT NULL,
 	price FLOAT NOT NULL
 );`
 

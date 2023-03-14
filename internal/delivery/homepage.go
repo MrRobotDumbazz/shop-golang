@@ -1,9 +1,11 @@
 package delivery
 
 import (
+	"errors"
 	"log"
 	"net/http"
 	"shop/internal/service"
+	"shop/models"
 	"text/template"
 )
 
@@ -31,7 +33,33 @@ func (h *Handler) HomePage(w http.ResponseWriter, r *http.Request) {
 			h.Errors(w, http.StatusInternalServerError, err.Error())
 			return
 		}
-		if err = t.Execute(w, seller); err != nil {
+		var products []models.Product
+		if len(r.URL.Query()) == 0 {
+			products, err = h.services.GetNewAllProducts()
+			if err != nil {
+				log.Print("err:delivery:homepage: GetNewAllProducts")
+				h.Errors(w, http.StatusInternalServerError, err.Error())
+				return
+			}
+		} else {
+			products, err = h.services.GetAllProductsBy(r.URL.Query())
+			if err != nil {
+				if errors.Is(err, service.ErrInvalidQueryRequest) {
+					h.Errors(w, http.StatusNotFound, "Invalid query request")
+					return
+				}
+				h.Errors(w, http.StatusInternalServerError, err.Error())
+				return
+			}
+		}
+		p := struct {
+			Products      []models.Product
+			Authorization bool
+		}{
+			Products:      products,
+			Authorization: seller.HasToken,
+		}
+		if err = t.Execute(w, p); err != nil {
 			log.Print(err)
 			h.Errors(w, http.StatusInternalServerError, err.Error())
 			return
