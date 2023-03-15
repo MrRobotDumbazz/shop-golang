@@ -16,17 +16,16 @@ func (h *Handler) HomePage(w http.ResponseWriter, r *http.Request) {
 	}
 	switch r.Method {
 	case "GET":
-		claims, ok := r.Context().Value(tokenCtxKey).(*service.TokenClaims)
+		sellerid, ok := r.Context().Value(keySellerID).(int)
 		if !ok {
 			h.Errors(w, http.StatusInternalServerError, "Don't working context")
 			return
 		}
-		log.Printf("Claims: %v", claims)
-		seller, err := h.services.ValidateToken(claims, false)
-		if err != nil {
-			h.Errors(w, http.StatusInternalServerError, err.Error())
-			return
+		authorization := true
+		if sellerid == 0 {
+			authorization = false
 		}
+
 		t, err := template.ParseFiles("templates/homepage.html")
 		if err != nil {
 			log.Print(err)
@@ -57,7 +56,7 @@ func (h *Handler) HomePage(w http.ResponseWriter, r *http.Request) {
 			Authorization bool
 		}{
 			Products:      products,
-			Authorization: seller.HasToken,
+			Authorization: authorization,
 		}
 		if err = t.Execute(w, p); err != nil {
 			log.Print(err)

@@ -112,8 +112,9 @@ func (h *Handler) SignIn(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) Logout(w http.ResponseWriter, r *http.Request) {
-	claims, ok := r.Context().Value(tokenCtxKey).(*service.TokenClaims)
+	sellerid, ok := r.Context().Value(keySellerID).(int)
 	if !ok {
+		h.Errors(w, http.StatusInternalServerError, "Don't working context")
 		return
 	}
 	http.SetCookie(w, &http.Cookie{
@@ -122,18 +123,24 @@ func (h *Handler) Logout(w http.ResponseWriter, r *http.Request) {
 		Path:   "/",
 		Secure: true,
 	})
-	h.services.DeleteToken(claims)
+	h.services.DeleteToken(sellerid)
 }
 
 func (h *Handler) RefreshToken(w http.ResponseWriter, r *http.Request) {
-	claims, ok := r.Context().Value(tokenCtxKey).(*service.TokenClaims)
+	sellerid, ok := r.Context().Value(keySellerID).(int)
 	if !ok {
+		h.Errors(w, http.StatusInternalServerError, "Don't working context")
 		return
 	}
-	user, err := h.services.ValidateToken(claims, true)
+	refreshtoken, err := h.services.GenerateRefreshJWT(sellerid)
 	if err != nil {
-		h.Errors(w, http.StatusUnauthorized, "")
+		h.Errors(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	_, err = h.services.GenerateRefreshJWT(user)
+	http.SetCookie(w, &http.Cookie{
+		Name:   "JWT",
+		Value:  refreshtoken,
+		Path:   "/",
+		Secure: true,
+	})
 }

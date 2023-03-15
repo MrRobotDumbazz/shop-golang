@@ -33,10 +33,11 @@ type Auth interface {
 	CreateSeller(*models.Seller) error
 	GenerateJWT(login, password string) (accessToken string, err error)
 	ParseToken(tokenString, secret string) (*TokenClaims, error)
-	ValidateToken(claims *TokenClaims, isRefresh bool) (models.Seller, error)
-	DeleteToken(claims *TokenClaims)
+	ValidateToken(claims *TokenClaims, isRefresh bool) (int, error)
+	DeleteToken(sellerid int)
 	ExpireToken(claims *TokenClaims)
-	GenerateRefreshJWT(seller models.Seller) (refreshToken string, err error)
+	GenerateRefreshJWT(sellerid int) (refreshToken string, err error)
+
 	// ParseJWT(token string) (int, error)
 	// DeleteJWT(token string) error
 }
@@ -145,35 +146,36 @@ func (s *AuthService) GenerateJWT(login, password string) (accessToken string, e
 	return accessToken, nil
 }
 
-func (s *AuthService) GenerateRefreshJWT(seller models.Seller) (refreshToken string, err error) {
+func (s *AuthService) GenerateRefreshJWT(sellerid int) (refreshToken string, err error) {
 	var refreshUID string
-	if refreshToken, refreshUID, _, err = s.createToken(seller.ID, 46000, RefreshSecret); err != nil {
+	if refreshToken, refreshUID, _, err = s.createToken(sellerid, 46000, RefreshSecret); err != nil {
 		return
 	}
 	cacheJSON, err := json.Marshal(models.CachedTokens{
 		RefreshUID: refreshUID,
 	})
 	ctx := contextWithTimeout()
-	s.redis.SetToken(ctx, seller.ID, string(cacheJSON))
+	s.redis.SetToken(ctx, sellerid, string(cacheJSON))
 	return refreshToken, nil
 }
 
-func (s *AuthService) ValidateToken(claims *TokenClaims, isRefresh bool) (models.Seller, error) {
+func (s *AuthService) ValidateToken(claims *TokenClaims, isRefresh bool) (int, error) {
 	ctx := contextWithTimeout()
 	cacheJSON, err := s.redis.GetToken(ctx, claims.SellerId)
 	if err != nil {
-		return models.Seller{}, err
+		log.Println("Error in GetToken %v", err)
+		return 0, err
 	}
+	log.Println("CacheJSON: ", cacheJSON)
 	cachedTokens := new(models.CachedTokens)
-	seller := models.Seller{}
-	err = json.Unmarshal([]byte(cacheJSON), cachedTokens)
-	if err != nil {
-		log.Print(err)
-		seller = models.Seller{
-			HasToken: false,
-		}
-		return seller, nil
-	}
+	_ = json.Unmarshal([]byte(cacheJSON), cachedTokens)
+	// if err != nil {
+	// 	log.Print(err)
+	// 	seller = models.Seller{
+	// 		HasToken: false,
+	// 	}
+	// 	return seller, nil
+	// }
 	var tokenUID string
 	if isRefresh {
 		tokenUID = cachedTokens.RefreshUID
@@ -182,23 +184,11 @@ func (s *AuthService) ValidateToken(claims *TokenClaims, isRefresh bool) (models
 	}
 
 	if err != nil || tokenUID != claims.UID {
-		seller = models.Seller{
-			HasToken: false,
-		}
-		return seller, nil
+		return 0, err
 	}
-	seller, err = s.repository.GetUserInID(claims.SellerId)
-	if err != nil {
-		log.Print(err)
-		seller = models.Seller{
-			HasToken: false,
-		}
-		return seller, nil
-	}
-	seller = models.Seller{
-		HasToken: true,
-	}
-	return seller, nil
+	log.Println("Claims ID:", claims.SellerId)
+
+	return claims.SellerId, nil
 }
 
 func (s *AuthService) createToken(userID int, expireMinutes int, secret string) (
@@ -242,9 +232,9 @@ func (s *AuthService) ParseToken(tokenString, secret string) (*TokenClaims, erro
 	return nil, errors.New("Error in claims")
 }
 
-func (s *AuthService) DeleteToken(claims *TokenClaims) {
+func (s *AuthService) DeleteToken(sellerid int) {
 	ctx := contextWithTimeout()
-	s.redis.DeleteToken(ctx, claims.SellerId)
+	s.redis.DeleteToken(ctx, sellerid)
 }
 
 func (s *AuthService) ExpireToken(claims *TokenClaims) {

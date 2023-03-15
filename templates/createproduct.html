@@ -8,19 +8,20 @@
     <title>Create Product</title>
 </head>
 <body>
-    <input type="text" id="name" placeholder="name" name="name" required> <br><br>
-    <input type="text" id="company" placeholder="company" name="company" required> <br><br>
-    <input type="text" id="description" placeholder="description" name="description" required> <br><br>
-    <input type="text" id="price" placeholder="price"  name="price">
-    <input type="radio" id="category1" name="categories" value="Fruit, vegetables">
-    <label for="category1" >Fruit, vegetables</label>
-    <input type="radio" id="category2" name="categories" value="Meat">
-    <label for="category2" >Meat</label>
-    <input type="radio" id="category3" name="categories" value="Gastronomy">
-    <label for="category3" >Gastronomy</label>
-    <input type="radio" id="category4" name="categories" value="Soft drinks">
-    <label for="category4" >Soft drinks</label>
-    <input type="radio" id="category5" name="categories" value="Confectionery">
+    <form method="post" action="createproduct">
+        <input type="text" id="name" placeholder="name" name="name" required> <br><br>
+        <input type="text" id="company" placeholder="company" name="company" required> <br><br>
+        <input type="text" id="description" placeholder="description" name="description" required> <br><br>
+        <input type="text" id="price" placeholder="price"  name="price">
+        <input type="radio" id="category1" name="categories" value="Fruit, vegetables">
+        <label for="category1" >Fruit, vegetables</label>
+        <input type="radio" id="category2" name="categories" value="Meat">
+        <label for="category2" >Meat</label>
+        <input type="radio" id="category3" name="categories" value="Gastronomy">
+        <label for="category3" >Gastronomy</label>
+        <input type="radio" id="category4" name="categories" value="Soft drinks">
+        <label for="category4" >Soft drinks</label>
+        <input type="radio" id="category5" name="categories" value="Confectionery">
     <label for="category5" >Confectionery</label>
     <input type="radio" id="category6" name="categories" value="Grocer">
     <label for="category6" >Grocer</label>
@@ -45,6 +46,7 @@
     <p>
         <input type="submit" class="button" id="submit" value="Run">
     </p>
+</form>
     
 </body>
 </html>

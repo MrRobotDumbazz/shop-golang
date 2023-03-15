@@ -9,13 +9,14 @@
 </head>
 <body>
     <div class="header-nav">
-        {{ if eq .HasToken false}}
-        <a href="/signup" class="button" target="">Sign-Up</a>
-        <a href="/signin" class="button" target="">Sign-In</a>
-        {{ else }}
+        {{ if .Authorization }}
         <a href="/logout" class="button" >Logout</a>
         <a href="/createproduct" class="button">CreateProduct</a>
-        {{end}}
+        
+        {{ else }}
+        <a href="/signup" class="button" target="">Sign-Up</a>
+        <a href="/signin" class="button" target="">Sign-In</a>
+        {{ end }}
     </div>
     <p>{{.Product.Name}}</p>
     <p>{{.Product.Company}}</p>

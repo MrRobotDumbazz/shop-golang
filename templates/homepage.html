@@ -17,7 +17,12 @@
         <a href="/logout" class="button" >Logout</a>
         <a href="/createproduct" class="button">CreateProduct</a>
         {{end}}
-        for 
+        {{range .Products}}
+        <h2><a href="/product?id={{.ID}}">{{.Name}}</a></h2>
+        <p>{{.Company}}</p>
+        <a href="?category={{.Category}}">{{.Category}}</a>
+        {{end}}
+
     </div>
 </body>
 </html>

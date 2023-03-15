@@ -27,6 +27,6 @@ func (h *Handler) Handlers() *chi.Mux {
 	r.Get("/logout", h.Logout)
 	r.Get("/createproduct", h.create_product)
 	r.Post("/createproduct", h.create_product)
-	r.Post("/product", h.product)
+	r.Get("/product", h.product)
 	return r
 }

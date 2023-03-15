@@ -16,7 +16,6 @@ type RedisClient struct {
 type Redis interface {
 	SetToken(ctx context.Context, SID int, token string) error
 	GetToken(ctx context.Context, ID int) (string, error)
-	GetTokenUUID(ctx context.Context) (int, error)
 	DeleteToken(ctx context.Context, ID int)
 	ExpireToken(ctx context.Context, ID int) error
 }
@@ -62,7 +61,10 @@ func (r *RedisClient) SetToken(ctx context.Context, SID int, token string) error
 
 func (r *RedisClient) GetToken(ctx context.Context, ID int) (string, error) {
 	log.Printf("Claims ID: %d", ID)
-	token, _ := r.client.Get(ctx, fmt.Sprintf("token-%d", ID)).Result()
+	token, err := r.client.Get(ctx, fmt.Sprintf("token-%d", ID)).Result()
+	if err != nil {
+		return "", err
+	}
 	return token, nil
 }
 

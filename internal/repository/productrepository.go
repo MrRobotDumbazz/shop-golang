@@ -31,7 +31,7 @@ func (r *ProductRepository) GetNewAllProducts() ([]models.Product, error) {
 	}
 	for rows.Next() {
 		product := models.Product{}
-		if err := rows.Scan(&product.ID, &product.SellerID, &product.Name, &product.Company, &product.Description, &product.Price, &product.Category); err != nil {
+		if err := rows.Scan(&product.ID, &product.SellerID, &product.Name, &product.Company, &product.Description, &product.Category, &product.Price); err != nil {
 			return nil, err
 		}
 		products = append(products, product)
@@ -41,7 +41,7 @@ func (r *ProductRepository) GetNewAllProducts() ([]models.Product, error) {
 
 func (r *ProductRepository) GetProductByProductID(id int) (*models.Product, error) {
 	p := &models.Product{}
-	err := r.db.QueryRow("SELECT * FROM shopdb.product WHERE id = ?", id).Scan(&p.ID, &p.Name, &p.Description, &p.Price, &p.Category)
+	err := r.db.QueryRow("SELECT * FROM shopdb.product WHERE id = ?", id).Scan(&p.ID, &p.SellerID, &p.Name, &p.Company, &p.Description, &p.Category, &p.Price)
 	if err == sql.ErrNoRows {
 		return nil, ErrRecordNotFound
 	}
@@ -53,14 +53,14 @@ func (r *ProductRepository) GetProductByProductID(id int) (*models.Product, erro
 
 func (r *ProductRepository) GetProductByCategory(category string) ([]models.Product, error) {
 	var products []models.Product
-	query := "SELECT *  FROM shopdb.product ORDER BY DESC WHERE category = ?;"
+	query := "SELECT *  FROM shopdb.product WHERE category = ? ORDER BY name_product ;"
 	rows, err := r.db.Query(query, category)
 	if err != nil {
 		return nil, err
 	}
 	for rows.Next() {
 		product := models.Product{}
-		if err := rows.Scan(&product.ID, &product.SellerID, &product.Name, &product.Company, &product.Description, &product.Price, &product.Category); err != nil {
+		if err := rows.Scan(&product.ID, &product.SellerID, &product.Name, &product.Company, &product.Description, &product.Category, &product.Price); err != nil {
 			return nil, err
 		}
 		products = append(products, product)

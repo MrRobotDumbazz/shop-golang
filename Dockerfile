@@ -16,4 +16,5 @@ COPY /internal /app/internal
 COPY /static /app/static 
 COPY /templates /app/templates
 EXPOSE 8080 
+RUN ls
 CMD ["./main"]  

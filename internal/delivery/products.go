@@ -3,7 +3,6 @@ package delivery
 import (
 	"log"
 	"net/http"
-	"shop/internal/service"
 	"shop/models"
 	"strconv"
 	"text/template"
@@ -28,15 +27,13 @@ func (h *Handler) create_product(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	case "POST":
-		claims, ok := r.Context().Value(tokenCtxKey).(*service.TokenClaims)
+		sellerid, ok := r.Context().Value(keySellerID).(int)
 		if !ok {
 			h.Errors(w, http.StatusInternalServerError, "Don't working context")
 			return
 		}
-		log.Printf("Claims: %v", claims)
-		seller, err := h.services.ValidateToken(claims, false)
-		if err != nil {
-			h.Errors(w, http.StatusInternalServerError, err.Error())
+		if sellerid == 0 {
+			h.Errors(w, http.StatusForbidden, "")
 			return
 		}
 		if err := r.ParseForm(); err != nil {
@@ -70,7 +67,7 @@ func (h *Handler) create_product(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		product := &models.Product{
-			SellerID:    seller.ID,
+			SellerID:    sellerid,
 			Name:        name[0],
 			Company:     company[0],
 			Description: description[0],
@@ -104,47 +101,41 @@ func (h *Handler) product(w http.ResponseWriter, r *http.Request) {
 		h.Errors(w, http.StatusNotFound, "")
 		return
 	}
-	claims, ok := r.Context().Value(tokenCtxKey).(*service.TokenClaims)
+	sellerid, ok := r.Context().Value(keySellerID).(int)
 	if !ok {
 		h.Errors(w, http.StatusInternalServerError, "Don't working context")
 		return
 	}
-	log.Printf("Claims: %v", claims)
-	seller, err := h.services.ValidateToken(claims, false)
-	if err != nil {
-		h.Errors(w, http.StatusInternalServerError, err.Error())
-		return
-	}
 	authorization := true
-	if seller.ID == 0 {
+	if sellerid == 0 {
 		authorization = false
-		h.Errors(w, http.StatusForbidden, "")
-		return
 	}
 	switch r.Method {
 	case "GET":
-		t, err := template.ParseFiles("templates/createproduct.html")
+		t, err := template.ParseFiles("templates/product.html")
 		if err != nil {
 			log.Print(err)
 			h.Errors(w, http.StatusInternalServerError, err.Error())
 			return
 		}
-		if err = t.Execute(w, nil); err != nil {
-			log.Print(err)
-			h.Errors(w, http.StatusInternalServerError, err.Error())
-			return
-		}
+		// if err = t.Execute(w, nil); err != nil {
+		// 	log.Print(err)
+		// 	h.Errors(w, http.StatusInternalServerError, err.Error())
+		// 	return
+		// }
 		product, err := h.services.GetProductByProductID(productid)
 		if err != nil {
 			h.Errors(w, http.StatusInternalServerError, err.Error())
+			return
 		}
+		log.Println("Authorazation bool:", authorization)
 		pageProduct := struct {
 			Product       *models.Product
 			Seller        int
 			Authorization bool
 		}{
 			product,
-			seller.ID,
+			sellerid,
 			authorization,
 		}
 		if err := t.Execute(w, pageProduct); err != nil {

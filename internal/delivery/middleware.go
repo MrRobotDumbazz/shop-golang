@@ -10,27 +10,35 @@ import (
 type key int
 
 const (
-	tokenCtxKey key = iota
+	keySellerID key = iota
 )
 
 func (h *Handler) ValidateJWT(handler http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		claims := &service.TokenClaims{}
-		seller := 
+		sellerid := 0
 		cookie, err := r.Cookie("JWT")
 		if err != nil {
 			if err == http.ErrNoCookie {
 				claims = nil
+				log.Println("Nil cookie")
 			}
 			log.Printf("Error in cookie: %v", err)
 			claims = nil
 		} else {
 			claims, err = h.services.Auth.ParseToken(cookie.Value, service.AccessSecret)
+			if err != nil {
+				claims = nil
+				log.Printf("Error: %v", err)
+			}
 			log.Printf("Claims: %v", claims)
-			log.Printf("Error: %v", err)
-			seller, err = h.services.ValidateToken(claims, false)
+			sellerid, err = h.services.ValidateToken(claims, false)
+			log.Println("Seller id: %d", sellerid)
+			if err != nil {
+				log.Printf("Error: %v", err)
+			}
 		}
-		ctx := context.WithValue(r.Context(), tokenCtxKey, seller.ID)
+		ctx := context.WithValue(r.Context(), keySellerID, sellerid)
 		handler.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
